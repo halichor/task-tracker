@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Task Manager with Users & Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+        rel="stylesheet" />
+    <style>
+        body {
+            padding: 1rem;
+            background: #f8f9fa;
+        }
+
+        #app {
+            display: none;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+            padding: 0.3rem 0.5rem;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 0 3px #ddd;
+        }
+
+        .task-item input[type="text"] {
+            border: none;
+            background: transparent;
+            width: 100%;
+        }
+
+        .task-item input[type="text"]:focus {
+            outline: 1px solid #0d6efd;
+            background: #e7f1ff;
+        }
+
+        .nav-link.disabled {
+            cursor: not-allowed;
+        }
+
+        .task-drag-handle {
+            cursor: move;
+            margin-right: 0.5rem;
+        }
+
+        .edit-mode {
+            background: #e7f1ff;
+        }
+
+        .task-drag-handle {
+            cursor: grab;
+            margin-right: 0.5rem;
+            font-size: 1.2em;
+            color: #888;
+            user-select: none;
+        }
+
+        .task-edit-icons {
+            display: flex;
+            gap: 0.3rem;
+            margin-left: 0.5rem;
+        }
+
+        .task-checkbox {
+            margin-right: 0.5rem;
+        }
+
+        .task-item.edit-mode {
+            background: #f1f8ff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="auth" class="container" style="max-width: 400px;">
+        <h3 class="mb-4">Please Log In</h3>
+        <div class="mb-3">
+            <input type="text" id="login-username" class="form-control" placeholder="Username"
+                autocomplete="username" />
+        </div>
+        <div class="mb-3">
+            <input type="password" id="login-password" class="form-control" placeholder="Password"
+                autocomplete="current-password" />
+        </div>
+        <button id="login-btn" class="btn btn-primary w-100">Login</button>
+        <div id="login-error" class="text-danger mt-3"></div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app" class="container">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Task Manager - User: <span id="current-user-name"></span></h3>
+            <button id="logout-btn" class="btn btn-outline-secondary">Logout</button>
+        </div>
+
+        <ul class="nav nav-tabs mb-3" id="main-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="today-tab" data-bs-toggle="tab" data-bs-target="#today"
+                    type="button" role="tab">Today</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archive" type="button"
+                    role="tab">Archive</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="view-users-tab" data-bs-toggle="tab" data-bs-target="#view-users"
+                    type="button" role="tab">View Tasks</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button"
+                    role="tab">Settings</button>
+            </li>
+            <li class="nav-item" role="presentation" id="admin-tab-li" style="display:none;">
+                <button class="nav-link" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button"
+                    role="tab">Admin</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="main-tabs-content">
+            <!-- Today Tab -->
+            <div class="tab-pane fade show active" id="today" role="tabpanel" aria-labelledby="today-tab">
+                <div class="mb-3">
+                    <input type="text" id="task-input" class="form-control" placeholder="Enter a task for today" />
+                </div>
+                <button class="btn btn-primary mb-3" id="add-task-btn">Add Task</button>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Today's Tasks</h5>
+                    <div id="today-edit-controls" style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-outline-secondary btn-sm" id="today-edit-btn">
+                            <span id="today-edit-btn-label">EDIT</span>
+                        </button>
+                        <button class="btn btn-danger btn-sm" id="today-delete-selected-btn" style="display:none;">
+                            Delete Selected
+                        </button>
+                    </div>
+                </div>
+                <div id="today-tasks-list" class="mb-4"></div>
+            </div>
+
+            <!-- Archive Tab -->
+            <div class="tab-pane fade" id="archive" role="tabpanel" aria-labelledby="archive-tab">
+                <div class="mb-3">
+                    <div id="datepicker" class="datepicker-inline"></div>
+
+                    <h5>Tasks on <span id="archive-date-display">[select a date]</span></h5>
+                    <div id="archive-tasks-list"></div>
+                </div>
+            </div>
+
+            <!-- View Tasks Tab -->
+            <div class="tab-pane fade" id="view-users" role="tabpanel" aria-labelledby="view-users-tab">
+                <div class="mb-3">
+                    <label for="view-tasks-date" class="form-label">Select Date:</label>
+                    <div class="input-group date" id="view-tasks-date-group" data-provide="datepicker"
+                        data-date-format="yyyy-mm-dd" data-date-autoclose="true" data-date-today-highlight="true">
+                        <input type="text" id="view-tasks-date" class="form-control" readonly
+                            style="background:#fff; cursor:pointer; max-width:200px;" />
+                        <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                    </div>
+                </div>
+                <div class="accordion" id="users-tasks-accordion"></div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                <h5>Change Username and Password</h5>
+                <div class="mb-3">
+                    <label for="new-username" class="form-label">New Username</label>
+                    <input type="text" id="new-username" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label for="new-password" class="form-label">New Password</label>
+                    <input type="password" id="new-password" class="form-control" />
+                </div>
+                <button class="btn btn-primary" id="save-settings-btn">Save Changes</button>
+            </div>
+
+            <!-- Admin Tab -->
+            <div class="tab-pane fade" id="admin" role="tabpanel" aria-labelledby="admin-tab">
+                <h5>Admin User Management</h5>
+                <div class="mb-3">
+                    <label for="admin-new-username" class="form-label">New Username</label>
+                    <input type="text" id="admin-new-username" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label for="admin-new-password" class="form-label">New Password</label>
+                    <input type="password" id="admin-new-password" class="form-control" />
+                </div>
+                <button class="btn btn-success mb-3" id="admin-create-user-btn">Create User</button>
+
+                <h6>Existing Users</h6>
+                <ul id="user-list" class="list-group"></ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmModalLabel">Please Confirm</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="confirmModalBody">
+            <!-- Message goes here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="confirmModalCancel" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirmModalOk">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script>
+        (() => {
+            // Data keys and current user var
+            const LS_USERS_KEY = "tm_users";
+            const LS_TASKS_KEY = "tm_tasks";
+            const SESSION_USER_KEY = "tm_currentUser";
+            let currentUser = null;
+
+            // Elements
+            const authDiv = document.getElementById("auth");
+            const appDiv = document.getElementById("app");
+            const loginBtn = document.getElementById("login-btn");
+            const logoutBtn = document.getElementById("logout-btn");
+            const loginError = document.getElementById("login-error");
+            const currentUserNameSpan = document.getElementById("current-user-name");
+            const adminTabLi = document.getElementById("admin-tab-li");
+
+            // Tabs elements
+            const taskInput = document.getElementById("task-input");
+            const addTaskBtn = document.getElementById("add-task-btn");
+            const todayTasksList = document.getElementById("today-tasks-list");
+
+            const newUsernameInput = document.getElementById("new-username");
+            const newPasswordInput = document.getElementById("new-password");
+            const saveSettingsBtn = document.getElementById("save-settings-btn");
+
+            const adminNewUsername = document.getElementById("admin-new-username");
+            const adminNewPassword = document.getElementById("admin-new-password");
+            const adminCreateUserBtn = document.getElementById("admin-create-user-btn");
+            const userListUl = document.getElementById("user-list");
+
+            // Archive
+            const archiveDateDisplay = document.getElementById("archive-date-display");
+            const archiveTasksList = document.getElementById("archive-tasks-list");
+
+            // --- Helpers ---
+            function getUsers() {
+                let users = JSON.parse(localStorage.getItem(LS_USERS_KEY));
+                if (!users) {
+                    users = { admin: { password: "adminpass" } };
+                    localStorage.setItem(LS_USERS_KEY, JSON.stringify(users));
+                }
+                return users;
+            }
+            function saveUsers(users) {
+                localStorage.setItem(LS_USERS_KEY, JSON.stringify(users));
+            }
+            function getTasks() {
+                return JSON.parse(localStorage.getItem(LS_TASKS_KEY)) || {};
+            }
+            function saveTasks(tasks) {
+                localStorage.setItem(LS_TASKS_KEY, JSON.stringify(tasks));
+            }
+
+            // --- Login ---
+            function validateLogin(username, password) {
+                const users = getUsers();
+                return users[username] && users[username].password === password;
+            }
+
+            loginBtn.addEventListener("click", () => {
+                const username = document.getElementById("login-username").value.trim();
+                const password = document.getElementById("login-password").value;
+
+                if (!username || !password) {
+                    loginError.textContent = "Please enter username and password.";
+                    return;
+                }
+                if (validateLogin(username, password)) {
+                    currentUser = username;
+                    sessionStorage.setItem(SESSION_USER_KEY, currentUser);
+                    loginError.textContent = "";
+                    authDiv.style.display = "none";
+                    appDiv.style.display = "block";
+                    currentUserNameSpan.textContent = currentUser;
+                    setupAdminTab();
+                    loadTodayTasks();
+                    loadArchiveDate(new Date());
+                    clearLoginInputs();
+                    clearSettingsInputs();
+                } else {
+                    loginError.textContent = "Invalid username or password.";
+                }
+            });
+
+            logoutBtn.addEventListener("click", () => {
+                currentUser = null;
+                sessionStorage.removeItem(SESSION_USER_KEY);
+                authDiv.style.display = "block";
+                appDiv.style.display = "none";
+                clearLoginInputs();
+                clearSettingsInputs();
+                clearTasksDisplay();
+                clearAdminUserList();
+            });
+
+            function clearLoginInputs() {
+                document.getElementById("login-username").value = "";
+                document.getElementById("login-password").value = "";
+                loginError.textContent = "";
+            }
+            function clearSettingsInputs() {
+                newUsernameInput.value = "";
+                newPasswordInput.value = "";
+            }
+            function clearTasksDisplay() {
+                todayTasksList.innerHTML = "";
+                archiveTasksList.innerHTML = "";
+                document.getElementById("users-tasks-accordion").innerHTML = "";
+            }
+            function clearAdminUserList() {
+                userListUl.innerHTML = "";
+            }
+
+            // --- Admin Tab setup ---
+            function setupAdminTab() {
+                if (currentUser === "admin") {
+                    adminTabLi.style.display = "block";
+                    loadAdminUserList();
+                } else {
+                    adminTabLi.style.display = "none";
+                }
+            }
+
+            // --- Tasks functions ---
+            function loadTodayTasks() {
+                const tasks = getTasks();
+                const userTasks = (tasks[currentUser] && tasks[currentUser].today) || [];
+                renderTaskList(userTasks, todayTasksList, true);
+            }
+
+            function addTaskToToday(taskText) {
+                if (!taskText.trim()) return;
+                const tasks = getTasks();
+                if (!tasks[currentUser]) tasks[currentUser] = {};
+                if (!tasks[currentUser].today) tasks[currentUser].today = [];
+                tasks[currentUser].today.push(taskText.trim());
+                saveTasks(tasks);
+            }
+
+            let todayEditMode = false;
+            let todaySelectedTasks = new Set();
+            let todayOriginalTasks = null;
+
+            function renderTaskList(tasksArray, container, isEditable) {
+                container.innerHTML = "";
+                if (tasksArray.length === 0) {
+                    container.innerHTML = "<p><em>No tasks</em></p>";
+                    return;
+                }
+
+                // Make the list sortable if in edit mode
+                const ul = document.createElement("ul");
+                ul.className = "list-group";
+                ul.id = "today-tasks-ul";
+
+                tasksArray.forEach((task, idx) => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item d-flex align-items-center task-item";
+                    li.setAttribute("data-idx", idx);
+
+                    if (todayEditMode) li.classList.add("edit-mode");
+
+                    // Drag handle
+                    if (todayEditMode) {
+                        const dragHandle = document.createElement("span");
+                        dragHandle.className = "task-drag-handle bi bi-list";
+                        dragHandle.title = "Drag to reorder";
+                        dragHandle.innerHTML = "&#9776;";
+                        li.appendChild(dragHandle);
+                        li.draggable = true;
+                    }
+
+                    // Checkbox for mass delete
+                    if (todayEditMode) {
+                        const checkbox = document.createElement("input");
+                        checkbox.type = "checkbox";
+                        checkbox.className = "form-check-input task-checkbox";
+                        checkbox.checked = todaySelectedTasks.has(idx);
+                        checkbox.addEventListener("change", () => {
+                            if (checkbox.checked) todaySelectedTasks.add(idx);
+                            else todaySelectedTasks.delete(idx);
+                        });
+                        li.appendChild(checkbox);
+                    }
+
+                    // Task text or input
+                    if (todayEditMode) {
+                        const span = document.createElement("span");
+                        span.textContent = task;
+                        span.style.flex = "1";
+                        li.appendChild(span);
+
+                        // Edit and delete icons
+                        const icons = document.createElement("span");
+                        icons.className = "task-edit-icons";
+
+                        // (edit) button
+                        const editBtn = document.createElement("button");
+                        editBtn.className = "btn btn-link p-0";
+                        editBtn.title = "Rename";
+                        editBtn.textContent = "(edit)";
+                        editBtn.addEventListener("click", () => {
+                            // Replace span with input for inline editing
+                            const input = document.createElement("input");
+                            input.type = "text";
+                            input.value = task;
+                            input.className = "form-control";
+                            input.style.flex = "1";
+                            li.replaceChild(input, span);
+                            input.focus();
+
+                            // Save on blur or Enter
+                            function saveEdit() {
+                                const newText = input.value.trim();
+                                if (newText && newText !== task) {
+                                    const tasks = getTasks();
+                                    tasks[currentUser].today[idx] = newText;
+                                    saveTasks(tasks);
+                                }
+                                loadTodayTasks();
+                            }
+                            input.addEventListener("blur", saveEdit);
+                            input.addEventListener("keydown", (e) => {
+                                if (e.key === "Enter") {
+                                    input.blur();
+                                }
+                                if (e.key === "Escape") {
+                                    loadTodayTasks();
+                                }
+                            });
+                        });
+                        icons.appendChild(editBtn);
+
+                        // (delete) button
+                        const delBtn = document.createElement("button");
+                        delBtn.className = "btn btn-link text-danger p-0";
+                        delBtn.title = "Delete";
+                        delBtn.textContent = "(delete)";
+                        delBtn.addEventListener("click", async () => {
+                            const ok = await showConfirmModal("Delete this task?");
+                            if (ok) {
+                                const tasks = getTasks();
+                                tasks[currentUser].today.splice(idx, 1);
+                                saveTasks(tasks);
+                                loadTodayTasks();
+                            }
+                        });
+                        icons.appendChild(delBtn);
+
+                        li.appendChild(icons);
+                    } else {
+                        // Normal mode: just show text
+                        li.textContent = task;
+                    }
+
+                    ul.appendChild(li);
+                });
+
+                container.appendChild(ul);
+
+                // Drag & drop logic (only in edit mode)
+                if (todayEditMode) {
+                    let dragSrcIdx = null;
+                    ul.querySelectorAll("li").forEach(li => {
+                        li.addEventListener("dragstart", e => {
+                            dragSrcIdx = Number(li.getAttribute("data-idx"));
+                            li.style.opacity = "0.5";
+                        });
+                        li.addEventListener("dragend", e => {
+                            li.style.opacity = "";
+                        });
+                        li.addEventListener("dragover", e => {
+                            e.preventDefault();
+                            li.style.background = "#e7f1ff";
+                        });
+                        li.addEventListener("dragleave", e => {
+                            li.style.background = "";
+                        });
+                        li.addEventListener("drop", e => {
+                            e.preventDefault();
+                            li.style.background = "";
+                            const dropIdx = Number(li.getAttribute("data-idx"));
+                            if (dragSrcIdx !== null && dragSrcIdx !== dropIdx) {
+                                const tasks = getTasks();
+                                const arr = tasks[currentUser].today;
+                                const [moved] = arr.splice(dragSrcIdx, 1);
+                                arr.splice(dropIdx, 0, moved);
+                                saveTasks(tasks);
+                                loadTodayTasks();
+                            }
+                        });
+                    });
+                }
+            }
+
+            // --- Edit mode controls ---
+            const todayEditBtn = document.getElementById("today-edit-btn");
+            const todayDeleteSelectedBtn = document.getElementById("today-delete-selected-btn");
+
+            todayEditBtn.addEventListener("click", async () => {
+                if (!todayEditMode) {
+                    // Entering edit mode: store a copy of the original tasks
+                    const tasks = getTasks();
+                    todayOriginalTasks = (tasks[currentUser] && tasks[currentUser].today)
+                        ? [...tasks[currentUser].today]
+                        : [];
+                    todayEditMode = true;
+                    todaySelectedTasks.clear();
+                    todayDeleteSelectedBtn.style.display = "";
+                    todayEditBtn.classList.add("btn-primary");
+                    todayEditBtn.classList.remove("btn-outline-secondary");
+                    document.getElementById("today-edit-btn-label").textContent = "DONE";
+                    loadTodayTasks();
+                } else {
+                    // Leaving edit mode: confirm changes
+                    const keep = await showConfirmModal("Do you want to keep your changes to today's tasks? Click Cancel to revert.");
+                    if (!keep) {
+                        // Revert changes
+                        const tasks = getTasks();
+                        if (!tasks[currentUser]) tasks[currentUser] = {};
+                        tasks[currentUser].today = todayOriginalTasks ? [...todayOriginalTasks] : [];
+                        saveTasks(tasks);
+                    }
+                    todayEditMode = false;
+                    todaySelectedTasks.clear();
+                    todayDeleteSelectedBtn.style.display = "none";
+                    todayEditBtn.classList.remove("btn-primary");
+                    todayEditBtn.classList.add("btn-outline-secondary");
+                    document.getElementById("today-edit-btn-label").textContent = "EDIT";
+                    loadTodayTasks();
+                }
+            });
+
+            todayDeleteSelectedBtn.addEventListener("click", async () => {
+                if (todaySelectedTasks.size === 0) {
+                    alert("No tasks selected.");
+                    return;
+                }
+                const ok = await showConfirmModal(`Delete ${todaySelectedTasks.size} selected task(s)?`);
+                if (!ok) return;
+                const tasks = getTasks();
+                // Remove by index, highest to lowest to avoid reindexing issues
+                const idxs = Array.from(todaySelectedTasks).sort((a, b) => b - a);
+                idxs.forEach(idx => {
+                    tasks[currentUser].today.splice(idx, 1);
+                });
+                saveTasks(tasks);
+                todaySelectedTasks.clear();
+                loadTodayTasks();
+            });
+
+            // --- Archive tab ---
+            document.addEventListener('DOMContentLoaded', function () {
+                // Only initialize if not already initialized
+                if (!$('#datepicker').data('datepicker')) {
+                    $('#datepicker').datepicker({
+                        format: 'yyyy-mm-dd',
+                        todayHighlight: true,
+                        autoclose: true,
+                        orientation: "bottom auto"
+                    }).on('changeDate', function (e) {
+                        // e.format() is available for inline datepicker
+                        const selectedDateStr = e.format('yyyy-mm-dd');
+                        document.getElementById('archive-date-display').textContent = selectedDateStr;
+                        const parts = selectedDateStr.split('-');
+                        const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                        loadArchiveDate(dateObj);
+                    });
+
+                    // Set initial date to today
+                    $('#datepicker').datepicker('setDate', new Date());
+                }
+            });
+
+            // Show tasks for today on page load
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = (today.getMonth() + 1).toString().padStart(2, "0");
+            const dd = today.getDate().toString().padStart(2, "0");
+            archiveDateDisplay.textContent = `${yyyy}-${mm}-${dd}`;
+            loadArchiveDate(today);
+
+            function loadArchiveDate(dateObj) {
+                if (!(dateObj instanceof Date)) return;
+
+                const yyyy = dateObj.getFullYear();
+                const mm = (dateObj.getMonth() + 1).toString().padStart(2, "0");
+                const dd = dateObj.getDate().toString().padStart(2, "0");
+                const dateStr = `${yyyy}-${mm}-${dd}`;
+
+                const tasks = getTasks();
+                const userData = tasks[currentUser] || {};
+                const archivedTasks = userData.archive || {};
+                const todayTasks = userData.today || [];
+
+                // Get tasks saved in the archive for that date
+                const archivedForDate = archivedTasks[dateStr] || [];
+
+                // Also include today’s tasks if date matches today
+                const todayObj = new Date();
+                const todayStr = `${todayObj.getFullYear()}-${(todayObj.getMonth() + 1).toString().padStart(2, "0")}-${todayObj.getDate().toString().padStart(2, "0")}`;
+
+                let tasksForDate = archivedForDate;
+
+                // If the selected date is today, also add todayTasks
+                if (dateStr === todayStr) {
+                    tasksForDate = [...archivedForDate, ...todayTasks];
+                }
+
+                renderTaskList(tasksForDate, archiveTasksList, false);
+            }
+
+            // --- Settings tab ---
+            saveSettingsBtn.addEventListener("click", () => {
+                const newUser = newUsernameInput.value.trim();
+                const newPass = newPasswordInput.value;
+
+                if (!newUser && !newPass) {
+                    alert("Enter new username or password to change.");
+                    return;
+                }
+
+                let users = getUsers();
+
+                // Prevent changing admin username
+                if (currentUser === "admin" && newUser && newUser !== "admin") {
+                    alert("Admin username cannot be changed.");
+                    return;
+                }
+
+                // If changing username, check not already taken
+                if (newUser && newUser !== currentUser) {
+                    if (users[newUser]) {
+                        alert("Username already exists.");
+                        return;
+                    }
+                }
+
+                // Update users object and tasks keys if username changed
+                if (newUser && newUser !== currentUser) {
+                    // Rename user key in users
+                    users[newUser] = users[currentUser];
+                    delete users[currentUser];
+                    currentUser = newUser;
+                    sessionStorage.setItem(SESSION_USER_KEY, currentUser);
+                    currentUserNameSpan.textContent = currentUser;
+
+                    // Rename tasks key if any
+                    let tasks = getTasks();
+                    if (tasks[sessionStorage.getItem(SESSION_USER_KEY)]) {
+                        tasks[newUser] = tasks[currentUser] || {};
+                        delete tasks[sessionStorage.getItem(SESSION_USER_KEY)];
+                        saveTasks(tasks);
+                    }
+                }
+
+                // Change password if entered
+                if (newPass) {
+                    users[currentUser].password = newPass;
+                }
+
+                saveUsers(users);
+                alert("Settings saved.");
+                clearSettingsInputs();
+                setupAdminTab();
+            });
+
+            // --- Admin user management ---
+            function loadAdminUserList() {
+                const users = getUsers();
+                userListUl.innerHTML = "";
+                Object.keys(users).forEach((username) => {
+                    if (username === "admin") return; // Don't allow edit/delete admin here
+
+                    const li = document.createElement("li");
+                    li.className = "list-group-item d-flex justify-content-between align-items-center";
+
+                    li.textContent = username;
+
+                    const btnGroup = document.createElement("div");
+
+                    // Edit password button (popup prompt)
+                    const editBtn = document.createElement("button");
+                    editBtn.className = "btn btn-sm btn-primary me-2";
+                    editBtn.textContent = "Edit Password";
+                    editBtn.addEventListener("click", () => {
+                        const newPass = prompt(`Enter new password for user "${username}":`);
+                        if (newPass !== null) {
+                            let users = getUsers();
+                            users[username].password = newPass;
+                            saveUsers(users);
+                            alert("Password updated.");
+                        }
+                    });
+                    btnGroup.appendChild(editBtn);
+
+                    // Delete button
+                    const delBtn = document.createElement("button");
+                    delBtn.className = "btn btn-sm btn-danger";
+                    delBtn.textContent = "Delete";
+                    delBtn.addEventListener("click", () => {
+                        if (confirm(`Delete user "${username}" and all their tasks?`)) {
+                            let users = getUsers();
+                            delete users[username];
+                            saveUsers(users);
+                            // Delete tasks too
+                            let tasks = getTasks();
+                            delete tasks[username];
+                            saveTasks(tasks);
+                            loadAdminUserList();
+                            alert("User deleted.");
+                        }
+                    });
+                    btnGroup.appendChild(delBtn);
+
+                    li.appendChild(btnGroup);
+                    userListUl.appendChild(li);
+                });
+            }
+
+            adminCreateUserBtn.addEventListener("click", () => {
+                const newUser = adminNewUsername.value.trim();
+                const newPass = adminNewPassword.value;
+
+                if (!newUser || !newPass) {
+                    alert("Enter both username and password to create a user.");
+                    return;
+                }
+                if (newUser === "admin") {
+                    alert("Cannot create user named 'admin'.");
+                    return;
+                }
+
+                let users = getUsers();
+                if (users[newUser]) {
+                    alert("Username already exists.");
+                    return;
+                }
+                users[newUser] = { password: newPass };
+                saveUsers(users);
+                alert(`User "${newUser}" created.`);
+                adminNewUsername.value = "";
+                adminNewPassword.value = "";
+                loadAdminUserList();
+            });
+
+            // --- View Tasks Tab: Calendar + Accordion ---
+            $('#view-tasks-date-group').on('changeDate', function () {
+                const selectedDateStr = document.getElementById('view-tasks-date').value;
+                loadUsersTasksForDate(selectedDateStr);
+            });
+
+            document.getElementById('view-users-tab').addEventListener('shown.bs.tab', function () {
+                const input = document.getElementById('view-tasks-date');
+                if (!input.value) {
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, "0");
+                    const dd = String(today.getDate()).padStart(2, "0");
+                    input.value = `${yyyy}-${mm}-${dd}`;
+                }
+                loadUsersTasksForDate(input.value);
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                if (document.getElementById('view-users').classList.contains('active')) {
+                    const input = document.getElementById('view-tasks-date');
+                    if (!input.value) {
+                        const today = new Date();
+                        const yyyy = today.getFullYear();
+                        const mm = String(today.getMonth() + 1).padStart(2, "0");
+                        const dd = String(today.getDate()).padStart(2, "0");
+                        input.value = `${yyyy}-${mm}-${dd}`;
+                    }
+                    loadUsersTasksForDate(input.value);
+                }
+            });
+
+            // Listen for date change using the data-api event
+            $('#view-tasks-date-group').on('changeDate', function () {
+                const selectedDateStr = document.getElementById('view-tasks-date').value;
+                loadUsersTasksForDate(selectedDateStr);
+            });
+
+            // When the tab is shown, set the input to today and load tasks
+            document.getElementById('view-users-tab').addEventListener('shown.bs.tab', function () {
+                const input = document.getElementById('view-tasks-date');
+                if (!input.value) {
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, "0");
+                    const dd = String(today.getDate()).padStart(2, "0");
+                    input.value = `${yyyy}-${mm}-${dd}`;
+                }
+                loadUsersTasksForDate(input.value);
+            });
+
+            // Also call on DOMContentLoaded if tab is default
+            document.addEventListener('DOMContentLoaded', function () {
+                if (document.getElementById('view-users').classList.contains('active')) {
+                    const input = document.getElementById('view-tasks-date');
+                    if (!input.value) {
+                        const today = new Date();
+                        const yyyy = today.getFullYear();
+                        const mm = String(today.getMonth() + 1).padStart(2, "0");
+                        const dd = String(today.getDate()).padStart(2, "0");
+                        input.value = `${yyyy}-${mm}-${dd}`;
+                    }
+                    loadUsersTasksForDate(input.value);
+                }
+            });
+
+            // Render all users as accordion, each with their tasks for the selected date
+            function loadUsersTasksForDate(dateStr) {
+                const users = getUsers();
+                const tasks = getTasks();
+                const accordion = document.getElementById("users-tasks-accordion");
+                accordion.innerHTML = "";
+
+                Object.keys(users).forEach((username, index) => {
+                    const item = document.createElement("div");
+                    item.className = "accordion-item";
+
+                    const headerId = `heading-${index}`;
+                    const collapseId = `collapse-${index}`;
+
+                    const header = document.createElement("h2");
+                    header.className = "accordion-header";
+                    header.id = headerId;
+
+                    const button = document.createElement("button");
+                    button.className = "accordion-button collapsed";
+                    button.type = "button";
+                    button.setAttribute("data-bs-toggle", "collapse");
+                    button.setAttribute("data-bs-target", `#${collapseId}`);
+                    button.setAttribute("aria-expanded", "false");
+                    button.setAttribute("aria-controls", collapseId);
+                    button.textContent = username;
+
+                    header.appendChild(button);
+
+                    const collapse = document.createElement("div");
+                    collapse.id = collapseId;
+                    collapse.className = "accordion-collapse collapse";
+                    collapse.setAttribute("aria-labelledby", headerId);
+                    collapse.setAttribute("data-bs-parent", "#users-tasks-accordion");
+
+                    const body = document.createElement("div");
+                    body.className = "accordion-body";
+
+                    // Collect tasks for the user on the selected date
+                    let userTasksForDate = [];
+                    if (tasks[username]) {
+                        if (tasks[username].archive && tasks[username].archive[dateStr]) {
+                            userTasksForDate = userTasksForDate.concat(tasks[username].archive[dateStr]);
+                        }
+                        // Include today's tasks if the selected date is today
+                        const todayObj = new Date();
+                        const todayStr = todayObj.getFullYear() + "-" +
+                            String(todayObj.getMonth() + 1).padStart(2, "0") + "-" +
+                            String(todayObj.getDate()).padStart(2, "0");
+                        if (dateStr === todayStr && tasks[username].today) {
+                            userTasksForDate = userTasksForDate.concat(tasks[username].today);
+                        }
+                    }
+
+                    if (userTasksForDate.length === 0) {
+                        body.innerHTML = "<p><em>No tasks for this date.</em></p>";
+                    } else {
+                        const ul = document.createElement("ul");
+                        ul.className = "list-group";
+                        userTasksForDate.forEach(task => {
+                            const li = document.createElement("li");
+                            li.className = "list-group-item";
+                            li.textContent = task;
+                            ul.appendChild(li);
+                        });
+                        body.appendChild(ul);
+                    }
+
+                    collapse.appendChild(body);
+                    item.appendChild(header);
+                    item.appendChild(collapse);
+                    accordion.appendChild(item);
+                });
+            }
+
+            // --- On page load, check session ---
+            function init() {
+                const savedUser = sessionStorage.getItem(SESSION_USER_KEY);
+                if (savedUser && getUsers()[savedUser]) {
+                    currentUser = savedUser;
+                    authDiv.style.display = "none";
+                    appDiv.style.display = "block";
+                    currentUserNameSpan.textContent = currentUser;
+                    setupAdminTab();
+                    loadTodayTasks();
+                    loadArchiveDate(new Date());
+                } else {
+                    authDiv.style.display = "block";
+                    appDiv.style.display = "none";
+                }
+            }
+
+            init();
+
+            document.getElementById('archive-tab').addEventListener('shown.bs.tab', function () {
+                loadArchiveDate(new Date());
+            });
+        })();
+
+        function showConfirmModal(message) {
+    return new Promise((resolve) => {
+        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        document.getElementById('confirmModalBody').textContent = message;
+
+        const okBtn = document.getElementById('confirmModalOk');
+        const cancelBtn = document.getElementById('confirmModalCancel');
+
+        function cleanup(result) {
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+            document.getElementById('confirmModal').removeEventListener('hidden.bs.modal', onCancel);
+            resolve(result);
+        }
+        function onOk() {
+            modal.hide();
+            cleanup(true);
+        }
+        function onCancel() {
+            cleanup(false);
+        }
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        document.getElementById('confirmModal').addEventListener('hidden.bs.modal', onCancel);
+
+        modal.show();
+    });
+}
+    </script>
+
+</body>
+
+</html>
