@@ -1,12 +1,25 @@
+/* Ensure dark mode applies to #app as well as body */
+[data-theme="dark"], #app[data-theme="dark"] {
+    background: var(--color-bg) !important;
+    color: var(--color-text) !important;
+}
 
-/* ==========================================================
-   1. IMPORTS
-========================================================== */
+/* Login password eye icon positioning */
+#auth .position-relative {
+    position: relative;
+}
+#login-password-eye {
+    z-index: 10;
+    border-radius: 50%;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+}
+/* Bootstrap Icons for dark mode toggle (if not loaded elsewhere) */
 @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css');
 
-/* ==========================================================
-   2. CSS VARIABLES & PALETTE/THEME SYSTEM
-========================================================== */
+
+/* === PALETTE & THEME SYSTEM === */
+/* All color roles use these variables. Set by [data-theme][data-palette] selectors below. */
 :root {
     --color-bg: #f8f9fa;
     --color-surface: #fff;
@@ -48,6 +61,7 @@
     --color-warning: #ffd166;
     --color-muted: #b0b3b8;
 }
+
 /* --- PINK --- */
 [data-theme="light"][data-palette="pnk"] {
     --color-bg: #fff0f6;
@@ -75,6 +89,7 @@
     --color-warning: #ffd6e0;
     --color-muted: #e0b3c2;
 }
+
 /* --- ORANGE --- */
 [data-theme="light"][data-palette="org"] {
     --color-bg: #fff7ed;
@@ -102,6 +117,7 @@
     --color-warning: #ffe0b2;
     --color-muted: #e0c3a2;
 }
+
 /* --- YELLOW --- */
 [data-theme="light"][data-palette="ylw"] {
     --color-bg: #fffbe6;
@@ -129,6 +145,7 @@
     --color-warning: #fff9c4;
     --color-muted: #e0d3a2;
 }
+
 /* --- PURPLE --- */
 [data-theme="light"][data-palette="prp"] {
     --color-bg: #f3e8ff;
@@ -156,6 +173,7 @@
     --color-warning: #ede7f6;
     --color-muted: #d1b3ff;
 }
+
 /* --- GREEN --- */
 [data-theme="light"][data-palette="grn"] {
     --color-bg: #f0fff4;
@@ -184,117 +202,65 @@
     --color-muted: #b2f2bb;
 }
 
-/* ==========================================================
-   3. LAYOUT & GENERAL
-========================================================== */
 body {
     padding: 1rem;
     background: var(--color-bg);
     color: var(--color-text);
 }
-#app {
-    display: none;
-}
-#auth {
-    display: none;
-}
-[data-theme="dark"], #app[data-theme="dark"] {
-    background: var(--color-bg) !important;
-    color: var(--color-text) !important;
-}
 
-/* ==========================================================
-   4. USER TODO SECTION
-========================================================== */
-#user-todo-section {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px #0001;
-}
-#user-todo-section h5 {
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-#user-todo-section ul.list-group {
-    margin-bottom: 0.5rem;
-}
-#user-todo-section li.list-group-item {
-    font-size: 1rem;
-    background: var(--color-surface-alt);
-    border: none;
-    border-radius: 4px;
-    margin-bottom: 0.25rem;
-    display: flex;
-    align-items: center;
-}
-#user-todo-section input[type="text"] {
-    border-radius: 4px;
-}
-#user-todo-section button.btn-link {
-    font-size: 0.95em;
-    padding: 0 0.5em;
-}
+ #app {
+     display: none;
+ }
 
-/* ==========================================================
-   5. AUTH / LOGIN
-========================================================== */
-#auth .position-relative {
-    position: relative;
-}
-#login-password-eye {
-    z-index: 10;
-    border-radius: 50%;
-    padding: 0.25rem 0.5rem;
-    line-height: 1;
-}
+ .task-item {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     margin-bottom: 0.3rem;
+     padding: 0.3rem 0.5rem;
+     background: var(--color-surface);
+     border-radius: 4px;
+     box-shadow: 0 0 3px var(--color-border);
+ }
 
-/* ==========================================================
-   6. TASKS / TABLES
-========================================================== */
-.task-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.3rem;
-    padding: 0.3rem 0.5rem;
-    background: var(--color-surface);
-    border-radius: 4px;
-    box-shadow: 0 0 3px var(--color-border);
-}
-.task-item input[type="text"],
-.task-item select {
-    border: none;
-    background: transparent;
-    width: auto;
-    min-width: 60px;
-}
-.task-item input[type="text"]:focus,
-.task-item select:focus {
-    outline: 1px solid var(--color-primary);
-    background: var(--color-primary-bg);
-}
-.nav-link.disabled {
-    cursor: not-allowed;
-}
-.task-edit-icons {
-    display: flex;
-    gap: 0.3rem;
-    margin-left: 0.5rem;
-}
-.task-checkbox {
-    margin-right: 0.5rem;
-}
-.task-item.edit-mode {
-    background: var(--color-surface-alt);
-}
-th {
-    position: relative;
-}
+ .task-item input[type="text"],
+ .task-item select {
+     border: none;
+     background: transparent;
+     width: auto;
+     min-width: 60px;
+ }
 
-/* ==========================================================
-   7. MISC / UTILITIES
-========================================================== */
+ .task-item input[type="text"]:focus,
+ .task-item select:focus {
+     outline: 1px solid var(--color-primary);
+     background: var(--color-primary-bg);
+ }
+
+ .nav-link.disabled {
+     cursor: not-allowed;
+ }
+
+ .task-edit-icons {
+     display: flex;
+     gap: 0.3rem;
+     margin-left: 0.5rem;
+ }
+
+ .task-checkbox {
+     margin-right: 0.5rem;
+ }
+
+ .task-item.edit-mode {
+     background: var(--color-surface-alt);
+
+ }
+
+ th {
+     position: relative;
+ }
+
+/* --- Search Box Clear Button (inside input) --- */
 .search-clear-inside {
     border-radius: 0.375rem;
     background: var(--color-surface-alt);
@@ -312,24 +278,3 @@ th {
     background: var(--color-primary-bg);
     color: var(--color-primary);
 }
-
-/* Spinner utility (Bootstrap compatible) */
-.spinner,
-.spinner-border {
-    display: inline-block;
-    width: 2rem;
-    height: 2rem;
-    vertical-align: text-bottom;
-    border: 0.25em solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    animation: spinner-border 0.75s linear infinite;
-}
-@keyframes spinner-border {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-/* ==========================================================
-   8. MAIN APPLICATION STYLES
-========================================================== */

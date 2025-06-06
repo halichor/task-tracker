@@ -1,129 +1,79 @@
+// --- DEBUG: Script loaded ---
+console.log("[DEBUG] script.js loaded");
+// --- TODO List Section ---
+// All localStorage-based TODO logic has been removed.
+// Firestore-based TODO logic will be implemented here.
 
-/**
- * =============================
- * 6. TODOs/TASKS LOGIC (CRUD, OPTIMISTIC UI, ANIMATION)
- * =============================
- * All Firestore-based TODO logic and UI for the task tracker app.
- */
+// --- Firestore-based TODO List Logic ---
 
-/**
- * Returns the Firestore collection for TODOs.
- * @returns {firebase.firestore.CollectionReference}
- */
+// Helper: Get Firestore reference
 const todosCollection = () => db.collection('todos');
 
-/**
- * Loads all TODOs for the current user from Firestore, sorted by creation time.
- * Ensures that only the current user's TODOs are loaded and visible.
- * @returns {Promise<Array>} Array of TODO objects for the current user.
- */
+// Load TODOs for the current user
 async function loadTodosFromFirestore() {
-    // Use username as document ID
-    if (!window.currentUser || !currentUser.username) return [];
-    const username = currentUser.username;
-    const doc = await todosCollection().doc(username).get();
-    if (!doc.exists) return [];
-    let todos = doc.data().todos || [];
-    // Add id field for UI compatibility (use array index as fallback)
-    todos = todos.map((t, idx) => ({ id: t.id || idx.toString(), ...t }));
-    // Sort by created (Timestamp or string)
+    // Use user ID for association
+    if (!window.currentUser || !currentUser.id) return [];
+    const userId = currentUser.id;
+    let snapshot;
+    try {
+        snapshot = await todosCollection()
+            .where('userId', '==', userId)
+            .orderBy('createdAt')
+            .get();
+    } catch (e) {
+        console.warn('[TODO] Firestore orderBy(createdAt) failed, falling back to unordered:', e);
+        snapshot = await todosCollection()
+            .where('userId', '==', userId)
+            .get();
+    }
+    let todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Sort by createdAt (Timestamp or string)
     todos.sort((a, b) => {
-        const aTime = a.created && a.created.toDate ? a.created.toDate().getTime() : (a.created ? new Date(a.created).getTime() : 0);
-        const bTime = b.created && b.created.toDate ? b.created.toDate().getTime() : (b.created ? new Date(b.created).getTime() : 0);
+        const aTime = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const bTime = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
         return aTime - bTime;
     });
     return todos;
 }
 
-/**
- * Adds a TODO to Firestore for the current user.
- * Not used directly in UI (UI uses inline logic for optimistic updates).
- * @param {string} text - The TODO text.
- * @returns {Promise<void>}
- */
+// Add a TODO
 async function addTodoToFirestore(text) {
-    // Use username as document ID
-    if (!window.currentUser || !currentUser.username) {
-        console.error("No currentUser or currentUser.username set!");
+    // Always use user ID for association
+    if (!window.currentUser || !currentUser.id) {
+        console.error("No currentUser or currentUser.id set!");
         return;
     }
     if (typeof db === 'undefined' || !db) {
         console.error("Firestore db is not defined!");
         return;
     }
-    const username = currentUser.username;
-    const docRef = todosCollection().doc(username);
-    const doc = await docRef.get();
-    let todos = [];
-    if (doc.exists) {
-        todos = doc.data().todos || [];
-    }
-    // Add new todo
-    const newTodo = {
-        id: crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2)),
+    // Remove firebase check: firebase is not a global in this context
+    await todosCollection().add({
+        userId: currentUser.id,
         text: text,
         completed: false,
-        created: new Date()
-    };
-    todos.push(newTodo);
-    await docRef.set({ todos }, { merge: true });
+        createdAt: (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue && firebase.firestore.FieldValue.serverTimestamp) ? firebase.firestore.FieldValue.serverTimestamp() : (window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue && window.firebase.firestore.FieldValue.serverTimestamp ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date())
+    });
     console.log("TODO added to Firestore.");
 }
 
-/**
- * Marks a TODO as completed or active in Firestore.
- * @param {string} id - The TODO document ID.
- * @param {boolean} completed - Completion state.
- * @returns {Promise<void>}
- */
+// Mark as completed/active
 async function setTodoCompleted(id, completed) {
-    // Update the completed field of the correct TODO in the user's todos array
-    if (!window.currentUser || !currentUser.username) return;
-    const username = currentUser.username;
-    const docRef = todosCollection().doc(username);
-    const doc = await docRef.get();
-    if (!doc.exists) return;
-    let todos = doc.data().todos || [];
-    todos = todos.map(t => t.id === id ? { ...t, completed } : t);
-    await docRef.set({ todos }, { merge: true });
+    await todosCollection().doc(id).update({ completed });
 }
 
-/**
- * Deletes a TODO from Firestore.
- * @param {string} id - The TODO document ID.
- * @returns {Promise<void>}
- */
+// Delete a TODO
 async function deleteTodoFromFirestore(id) {
-    // Remove the correct TODO from the user's todos array
-    if (!window.currentUser || !currentUser.username) return;
-    const username = currentUser.username;
-    const docRef = todosCollection().doc(username);
-    const doc = await docRef.get();
-    if (!doc.exists) return;
-    let todos = doc.data().todos || [];
-    todos = todos.filter(t => t.id !== id);
-    await docRef.set({ todos }, { merge: true });
+    await todosCollection().doc(id).delete();
 }
 
-/**
- * =============================
- * 7. TODOs/TASKS UI (RENDERING, EVENT HANDLING, ANIMATION)
- * =============================
- */
 
-/**
- * Creates a <li> element for a TODO item, with checkbox, inline editing, and delete button.
- * Handles animation and event binding.
- * @param {object} todo - The TODO object.
- * @param {boolean} isDone - Whether the TODO is completed.
- * @returns {HTMLLIElement} The constructed <li> element.
- */
+// Helper to update or create a todo <li>
 function createTodoLi(todo, isDone) {
     let li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center todo-anim';
     li.dataset.todoId = todo.id;
     // Only animate in if this is a temp (optimistic) item
-     // (But NOT when rendering real todos after optimistic add, to avoid double animation)
     if (todo.id.startsWith('temp-')) {
         li.style.opacity = '0';
         li.style.transform = 'translateY(-10px)';
@@ -132,14 +82,9 @@ function createTodoLi(todo, isDone) {
             li.style.opacity = '1';
             li.style.transform = 'translateY(0)';
         }, 10);
-    } else if (todo._skipAnim) {
-        // If _skipAnim is set, skip animation entirely (used by renderTodos after optimistic add)
-        li.style.transition = 'none';
-        li.style.opacity = '1';
-        li.style.transform = 'none';
     }
 
-    // --- Checkbox ---
+    // Checkbox
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'form-check-input me-2';
@@ -188,7 +133,7 @@ function createTodoLi(todo, isDone) {
     };
 
 
-    // --- Editable Text ---
+    // Text (editable on hover+click)
     const textSpan = document.createElement('span');
     textSpan.textContent = todo.text;
     textSpan.style.flex = '1 1 auto';
@@ -196,6 +141,7 @@ function createTodoLi(todo, isDone) {
         textSpan.style.textDecoration = 'line-through';
         textSpan.style.opacity = '0.6';
     }
+
     // Editing logic
     let editing = false;
     textSpan.addEventListener('mouseenter', () => {
@@ -225,29 +171,22 @@ function createTodoLi(todo, isDone) {
         textSpan.replaceWith(input);
         input.focus();
         input.setSelectionRange(0, input.value.length);
+
         // Save on Enter, cancel on Escape or blur
         const finishEdit = async (save) => {
             if (!editing) return;
             editing = false;
             let newText = input.value.trim();
             if (save && newText && newText !== todo.text) {
-                // Update the text field in the user's todos array
+                // Update Firestore
                 try {
-                    if (window.currentUser && currentUser.username) {
-                        const username = currentUser.username;
-                        const docRef = todosCollection().doc(username);
-                        const doc = await docRef.get();
-                        if (doc.exists) {
-                            let todos = doc.data().todos || [];
-                            todos = todos.map(t => t.id === todo.id ? { ...t, text: newText } : t);
-                            await docRef.set({ todos }, { merge: true });
-                            todo.text = newText;
-                        }
-                    }
+                    await todosCollection().doc(todo.id).update({ text: newText });
+                    todo.text = newText;
                 } catch (err) {
                     showToast('Failed to update TODO', 'error');
                 }
             }
+            // Replace input with updated span
             textSpan.textContent = save && newText ? newText : todo.text;
             input.replaceWith(textSpan);
         };
@@ -265,7 +204,7 @@ function createTodoLi(todo, isDone) {
         });
     });
 
-    // --- Delete Button ---
+    // Delete button
     const delBtn = document.createElement('button');
     delBtn.className = 'btn btn-sm btn-link text-danger p-0 ms-2 todo-del-btn';
     delBtn.innerHTML = '<span style="font-size:1.3em;line-height:1;">&times;</span>';
@@ -292,7 +231,6 @@ function createTodoLi(todo, isDone) {
             renderTodos();
         }
     };
-    // --- Compose li ---
     li.appendChild(checkbox);
     li.appendChild(textSpan);
     li.appendChild(delBtn);
@@ -308,18 +246,13 @@ function createTodoLi(todo, isDone) {
     return li;
 }
 
-/**
- * Renders the TODO lists (active and done) in the UI for the current user.
- * Handles DOM diffing, animation, and inline updates.
- * Ensures only the current user's TODOs are shown.
- * @returns {Promise<void>}
- */
+// Render TODOs in the UI
 async function renderTodos() {
     const todoList = document.getElementById('todo-list');
     const todoDoneList = document.getElementById('todo-done-list');
     if (!todoList || !todoDoneList) return;
 
-    // Load todos (all belong to current user)
+    // Load and filter todos
     let todos = await loadTodosFromFirestore();
     todos = todos.filter(t => t && typeof t.text === 'string');
     const active = todos.filter(t => !t.completed);
@@ -335,36 +268,31 @@ async function renderTodos() {
         if (!active.find(t => t.id === id)) todoList.removeChild(currentActiveLis[id]);
     });
     // Add/update <li>s for current active todos
+    let tempJustRemovedAt = {};
     active.forEach((todo, idx) => {
         let li = currentActiveLis[todo.id];
-        // If there is a temp <li> at this position, morph it into the real TODO in-place
-        const childAtIdx = todoList.children[idx];
-        if (childAtIdx && childAtIdx.dataset && childAtIdx.dataset.todoId && childAtIdx.dataset.todoId.startsWith('temp-')) {
-            // Morph temp <li> into real TODO in-place
-            childAtIdx.dataset.todoId = todo.id;
-            // Remove all children
-            while (childAtIdx.firstChild) childAtIdx.removeChild(childAtIdx.firstChild);
-            // Rebuild contents using createTodoLi, but transfer animation state
-            const realLi = createTodoLi(todo, false);
-            Array.from(realLi.childNodes).forEach(child => childAtIdx.appendChild(child));
-            childAtIdx.className = realLi.className;
-            // Keep opacity/transform if still animating
-            if (realLi.style.opacity) childAtIdx.style.opacity = realLi.style.opacity;
-            if (realLi.style.transform) childAtIdx.style.transform = realLi.style.transform;
-            // Update currentActiveLis
-            currentActiveLis[todo.id] = childAtIdx;
-            li = childAtIdx;
+        // Check if a temp <li> is at this position and remove it, mark for skip-animation
+        let skipAnim = false;
+        if (todoList.children[idx] && todoList.children[idx].dataset && todoList.children[idx].dataset.todoId && todoList.children[idx].dataset.todoId.startsWith('temp-')) {
+            todoList.removeChild(todoList.children[idx]);
+            skipAnim = true;
+            tempJustRemovedAt[idx] = true;
         }
-        // Normal logic if no temp <li> to morph
+        // Only animate if this is a real new item, not a replacement for a temp
+        const newLi = createTodoLi(todo, false);
+        // If a temp <li> was just removed at this idx, skip animation for this insert
+        if (skipAnim) {
+            newLi.style.transition = 'none';
+            newLi.style.opacity = '1';
+            newLi.style.transform = 'none';
+        }
         if (!li) {
-            const newLi = createTodoLi(todo, false);
             todoList.insertBefore(newLi, todoList.children[idx] || null);
         } else {
+            // If order or content changed, replace
             if (todoList.children[idx] !== li || li.querySelector('span').textContent !== todo.text) {
-                todoList.insertBefore(li, todoList.children[idx] || null);
-                // Update text if needed
-                const span = li.querySelector('span');
-                if (span && span.textContent !== todo.text) span.textContent = todo.text;
+                todoList.insertBefore(newLi, todoList.children[idx] || null);
+                todoList.removeChild(li);
             }
         }
     });
@@ -394,10 +322,7 @@ async function renderTodos() {
     });
 }
 
-/**
- * Sets up the TODO form for adding new TODOs, including optimistic UI updates.
- * Binds event handlers for add button and Enter key.
- */
+// Setup TODO form
 function setupTodoList() {
     const form = document.getElementById('todo-form');
     const input = document.getElementById('todo-input');
@@ -468,10 +393,64 @@ function setupTodoList() {
             input.value = '';
             // Add to Firestore in background
             try {
-                // Add to Firestore using the new array-based structure
-                await addTodoToFirestore(val);
-                // Do NOT remove the optimistic <li> here; let renderTodos morph it
-                await renderTodos();
+                // Add to Firestore and get the new doc ref
+                const docRef = await todosCollection().add({
+                    userId: currentUser.id,
+                    text: val,
+                    completed: false,
+                    createdAt: (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue && firebase.firestore.FieldValue.serverTimestamp) ? firebase.firestore.FieldValue.serverTimestamp() : (window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue && window.firebase.firestore.FieldValue.serverTimestamp ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date())
+                });
+                // Get the new TODO from Firestore (with ID and timestamp)
+                const doc = await docRef.get();
+                const todo = { id: doc.id, ...doc.data() };
+                // Remove the optimistic <li>
+                if (tempLi && tempLi.parentNode) tempLi.parentNode.removeChild(tempLi);
+                // Use the same createTodoLi as renderTodos for consistency
+                // Find the correct position to insert (by createdAt)
+                let createdAt = todo.createdAt && todo.createdAt.toDate ? todo.createdAt.toDate().getTime() : (todo.createdAt ? new Date(todo.createdAt).getTime() : Date.now());
+                // Gather all current <li>s and their createdAt
+                let lis = Array.from(todoList.children);
+                let insertIdx = lis.length;
+                for (let i = 0; i < lis.length; ++i) {
+                    let liCreatedAt = 0;
+                    let liId = lis[i].dataset.todoId;
+                    if (liId && liId.startsWith('temp-')) continue;
+                    let liCreatedAtAttr = lis[i].getAttribute('data-created-at');
+                    if (liCreatedAtAttr) {
+                        liCreatedAt = parseInt(liCreatedAtAttr, 10);
+                    } else {
+                        // fallback: try to find in window.todos if available
+                        if (window.todos) {
+                            let t = window.todos.find(t => t.id === liId);
+                            if (t && t.createdAt) {
+                                liCreatedAt = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().getTime() : (t.createdAt ? new Date(t.createdAt).getTime() : 0);
+                            }
+                        }
+                    }
+                    if (createdAt < liCreatedAt) {
+                        insertIdx = i;
+                        break;
+                    }
+                }
+                // Create the real <li> using the same helper as renderTodos
+                let realLi = null;
+                if (typeof createTodoLi === 'function') {
+                    realLi = createTodoLi(todo, false);
+                } else {
+                    // fallback: minimal realLi
+                    realLi = document.createElement('li');
+                    realLi.className = 'list-group-item d-flex justify-content-between align-items-center todo-anim';
+                    realLi.dataset.todoId = todo.id;
+                    realLi.textContent = todo.text;
+                }
+                // Store createdAt for future sorting
+                realLi.setAttribute('data-created-at', createdAt);
+                // Insert at the correct position
+                if (insertIdx >= todoList.children.length) {
+                    todoList.appendChild(realLi);
+                } else {
+                    todoList.insertBefore(realLi, todoList.children[insertIdx]);
+                }
             } catch (err) {
                 // If failed, remove the optimistic item and reload
                 if (tempLi && tempLi.parentNode) tempLi.parentNode.removeChild(tempLi);
@@ -496,12 +475,7 @@ function setupTodoList() {
     }
 }
 
-/**
- * =============================
- * 8. PAGE INITIALIZATION & TAB EVENTS
- * =============================
- * Sets up TODO list and renders on login and page load.
- */
+// Call setupTodoList and renderTodos after login
 const origAfterLoginSetup = window.afterLoginSetup;
 window.afterLoginSetup = async function () {
     if (origAfterLoginSetup) await origAfterLoginSetup();
@@ -511,6 +485,7 @@ window.afterLoginSetup = async function () {
     hideGlobalSpinner();
 };
 
+// Always setup TODO list and render on page load (for refreshes)
 document.addEventListener('DOMContentLoaded', async function () {
     showGlobalSpinner('Loading your TODOs...');
     setupTodoList();
@@ -538,16 +513,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         hideGlobalSpinner();
     }
 });
-
-/**
- * =============================
- * 9. UI HELPERS: VALIDATION, TOASTS, SPINNERS, DATE FORMATTING
- * =============================
- */
-
-/**
- * Adds inline validation to login form fields.
- */
+// --- Inline Validation for Login ---
 const loginUsernameInput = document.getElementById("login-username");
 const loginPasswordInput = document.getElementById("login-password");
 loginUsernameInput.addEventListener("input", function () {
@@ -565,9 +531,7 @@ loginPasswordInput.addEventListener("input", function () {
     }
 });
 
-/**
- * Adds inline validation to settings (user profile) fields.
- */
+// --- Inline Validation for Settings (user profile) ---
 if (typeof newUsernameInput !== 'undefined' && newUsernameInput) {
     newUsernameInput.addEventListener("input", function () {
         if (!this.value.trim()) {
@@ -586,13 +550,7 @@ if (typeof newPasswordInput !== 'undefined' && newPasswordInput) {
         }
     });
 }
-
-/**
- * Shows a toast notification (custom, not Bootstrap) for quick feedback.
- * @param {string} message - The message to display.
- * @param {string} [type="info"] - Type: info, success, error, warning.
- * @param {number} [duration=3000] - Duration in ms.
- */
+// --- Toast Notification System ---
 function showToast(message, type = "info", duration = 3000) {
     let toast = document.getElementById("global-toast");
     if (!toast) {
@@ -620,11 +578,7 @@ function showToast(message, type = "info", duration = 3000) {
     toast._timeout = setTimeout(() => { toast.style.display = "none"; }, duration);
 }
 
-/**
- * Sets an inline validation error on an input field.
- * @param {HTMLElement} input - The input element.
- * @param {string} message - The error message.
- */
+// --- Inline Validation Helpers ---
 function setFieldError(input, message) {
     input.classList.add("is-invalid");
     let feedback = input.nextElementSibling;
@@ -635,11 +589,6 @@ function setFieldError(input, message) {
     }
     feedback.textContent = message;
 }
-
-/**
- * Clears an inline validation error from an input field.
- * @param {HTMLElement} input - The input element.
- */
 function clearFieldError(input) {
     input.classList.remove("is-invalid");
     let feedback = input.nextElementSibling;
@@ -647,11 +596,7 @@ function clearFieldError(input) {
         feedback.textContent = "";
     }
 }
-
-/**
- * Shows a global spinner overlay with a message.
- * @param {string} [msg="Loading..."] - The message to display.
- */
+// Spinners and Toasts
 function showGlobalSpinner(msg = "Loading...") {
     const spinner = document.getElementById("global-spinner-indicator");
     const text = document.getElementById("global-spinner-text");
@@ -662,10 +607,6 @@ function showGlobalSpinner(msg = "Loading...") {
     // Force a short delay so spinner is visible even for fast actions
     window._spinnerLastShown = Date.now();
 }
-
-/**
- * Hides the global spinner overlay, ensuring a minimum visible time.
- */
 function hideGlobalSpinner() {
     const spinner = document.getElementById("global-spinner-indicator");
     if (spinner) {
@@ -680,10 +621,6 @@ function hideGlobalSpinner() {
     }
 }
 
-/**
- * Shows a Bootstrap toast (if present in DOM) for global feedback.
- * @param {string} [msg="Done!"] - The message to display.
- */
 function showGlobalToast(msg = "Done!") {
     // Wait for DOM to be ready
     if (!document.getElementById("global-toast")) {
@@ -699,13 +636,23 @@ function showGlobalToast(msg = "Done!") {
         toast.show();
     }
 }
-window.showGlobalToast = showGlobalToast;
 
-/**
- * Shows a toast and hides the spinner after a short delay (for async ops).
- * @param {string} message - The message to show.
- * @param {number} [delay=100] - Delay in ms before showing toast.
- */
+window.showGlobalToast = showGlobalToast; function showGlobalToast(msg = "Done!") {
+    // Wait for DOM to be ready
+    if (!document.getElementById("global-toast")) {
+        document.addEventListener("DOMContentLoaded", () => showGlobalToast(msg));
+        return;
+    }
+    const toastEl = document.getElementById("global-toast");
+    const toastBody = document.getElementById("global-toast-body");
+    if (toastEl && toastBody) {
+        toastBody.textContent = msg;
+        // Bootstrap 5: getOrCreateInstance
+        const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+        toast.show();
+    }
+}
+window.showGlobalToast = showGlobalToast;
 function finishWithToast(message, delay = 100) {
     setTimeout(() => {
         hideGlobalSpinner();
@@ -713,11 +660,7 @@ function finishWithToast(message, delay = 100) {
     }, delay);
 }
 
-/**
- * Formats a date as "YYYY Mon DD" (e.g., 2025 Jun 6).
- * @param {string|Date} dateInput - Date string (YYYY-MM-DD) or Date object.
- * @returns {string}
- */
+// Date formatting
 function formatDateYMD(dateInput) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     let d;
@@ -733,11 +676,6 @@ function formatDateYMD(dateInput) {
     return `${d.getFullYear()} ${months[d.getMonth()]} ${d.getDate()}`;
 }
 
-/**
- * Formats a date as "YYYY Month DD, Day" (e.g., 2025 June 6, Friday).
- * @param {string|Date} dateInput - Date string (YYYY-MM-DD) or Date object.
- * @returns {string}
- */
 function formatDateFull(dateInput) {
     const months = [
         "January", "February", "March", "April", "May", "June",
@@ -989,19 +927,7 @@ function formatDateFull(dateInput) {
     const adminNewMiddlename = document.getElementById("admin-new-middlename");
     const adminNewDesignation = document.getElementById("admin-new-designation");
 
-
-    /**
-     * =============================
-     * 12. GENERAL HELPERS & MODALS
-     * =============================
-     */
-
-    /**
-     * Wraps an async function with a global spinner and toast notifications.
-     * @param {object} obj - The object containing the function.
-     * @param {string} fnName - The function name to wrap.
-     * @param {object} messages - Toast messages for pending, done, and fail.
-     */
+    // --- Helpers ---
     function wrapAsyncWithSpinnerToast(obj, fnName, { pending, done, fail }) {
         const orig = obj[fnName];
         obj[fnName] = async function (...args) {
@@ -1019,11 +945,7 @@ function formatDateFull(dateInput) {
         };
     }
 
-    /**
-     * Shows a Bootstrap modal alert with a message and waits for user confirmation.
-     * @param {string} message - The message to display.
-     * @returns {Promise<void>} Resolves when the modal is closed.
-     */
+    // Modals
     async function showAlertModal(message) {
         return new Promise((resolve) => {
             const modal = new bootstrap.Modal(document.getElementById('alertModal'));
@@ -1292,7 +1214,6 @@ function formatDateFull(dateInput) {
         clearSettingsInputs();
         // Setup TODO list for logged-in user
         setupTodoList();
-        await renderTodos();
     }
     // --- TODOs Firestore Logic ---
     loginBtn.addEventListener("click", async () => {
@@ -1308,10 +1229,11 @@ function formatDateFull(dateInput) {
                 loginError.textContent = "User not found.";
                 return;
             }
-            window.currentUser = { ...userObj, username };
+            currentUser = { ...userObj, username };
+            window.currentUser = currentUser;
             sessionStorage.setItem(SESSION_USER_KEY, username);
             loginError.textContent = "";
-            console.log('[DEBUG] Login successful. currentUser =', window.currentUser);
+            console.log('[DEBUG] Login successful. currentUser =', currentUser);
             afterLoginSetup();
         } else {
             loginError.textContent = "Invalid username or password.";
@@ -1319,13 +1241,9 @@ function formatDateFull(dateInput) {
         }
     });
     logoutBtn.addEventListener("click", () => {
+        currentUser = null;
         window.currentUser = null;
         sessionStorage.removeItem(SESSION_USER_KEY);
-        // Clear TODO lists in the DOM
-        const todoList = document.getElementById('todo-list');
-        const todoDoneList = document.getElementById('todo-done-list');
-        if (todoList) todoList.innerHTML = '';
-        if (todoDoneList) todoDoneList.innerHTML = '';
         authDiv.style.display = "block";
         appDiv.style.display = "none";
         // On logout, force login default palette/theme
@@ -1583,19 +1501,7 @@ function formatDateFull(dateInput) {
         loadAdminUserList();
     });
 
-
-    /**
-     * =============================
-     * 11. TASKS CRUD & MASS EDITOR LOGIC
-     * =============================
-     */
-
-    /**
-     * Adds a new task for the current user on a given date.
-     * @param {object} taskObj - Task object with origin, activity, remarks, tags.
-     * @param {string} taskDate - Date string (YYYY-MM-DD).
-     * @returns {Promise<void>}
-     */
+    // --- Tasks functions ---
     async function addTaskToDate(taskObj, taskDate) {
         if (!taskObj || !taskObj.origin || !taskObj.activity || !taskDate) return;
         const tasks = await getTasks();
@@ -1622,10 +1528,6 @@ function formatDateFull(dateInput) {
     window.addTaskToDate = addTaskToDate;
     wrapAsyncWithSpinnerToast(window, "addTaskToDate", { pending: "Adding task...", done: "Task added!", fail: "Failed to add task." });
 
-    /**
-     * Ensures all tasks in the database have unique IDs (for legacy data).
-     * @returns {Promise<void>}
-     */
     async function ensureAllTasksHaveIDs() {
         const tasks = await getTasks();
         let changed = false;
@@ -3180,17 +3082,10 @@ function formatDateFull(dateInput) {
                 });
 
                 // Apply filter button
-                /**
-                 * Apply the selected filter values for this column and rerender the table.
-                 * Updates the global columnFilters state and triggers the appropriate rerender function
-                 * based on the current table container.
-                 * @function
-                 */
                 dropdown.querySelector(`#apply-filter-${colKey}`).onclick = async function () {
                     columnFilters[colKey] = new Set(tempSet);
                     dropdown.classList.remove('show');
                     dropdown.style.display = 'none';
-                    // Rerender the correct table based on container
                     if (container.id === 'today-tasks-list') {
                         rerenderTodayTable();
                     } else if (container.id === 'archive-tasks-list') {
@@ -3201,18 +3096,12 @@ function formatDateFull(dateInput) {
                         rerenderViewTasksTable();
                     }
                 };
-
-                /**
-                 * Clear all filter values for this column and rerender the table.
-                 * Resets the global columnFilters state for this column and triggers the appropriate rerender function.
-                 * @function
-                 */
+                // Clear filter button
                 dropdown.querySelector(`#clear-filter-${colKey}`).onclick = async function () {
                     tempSet.clear();
                     columnFilters[colKey] = new Set();
                     dropdown.classList.remove('show');
                     dropdown.style.display = 'none';
-                    // Rerender the correct table based on container
                     if (container.id === 'today-tasks-list') {
                         rerenderTodayTable();
                     } else if (container.id === 'archive-tasks-list') {
@@ -3225,11 +3114,6 @@ function formatDateFull(dateInput) {
                 };
 
                 // Sort Ascending
-                /**
-                 * Sort the table by this column in ascending order and rerender.
-                 * Updates the appropriate sortKey/sortAsc state and triggers rerender for the current table.
-                 * @function
-                 */
                 const sortAscBtn = dropdown.querySelector(`#sort-asc-${colKey}`);
                 if (sortAscBtn) {
                     sortAscBtn.onclick = async function () {
@@ -3645,11 +3529,11 @@ function formatDateFull(dateInput) {
     // Also run after login
     const origAfterLoginSetup = window.afterLoginSetup;
     window.afterLoginSetup = async function () {
-        if (origAfterLoginSetup) await origAfterLoginSetup();
-        await rerenderTodayTable();
-        await rerenderArchiveTable();
-        await rerenderMassEditorTable();
-        await rerenderViewTasksTable();
+        origAfterLoginSetup();
+        rerenderTodayTable();
+        rerenderArchiveTable();
+        rerenderMassEditorTable();
+        rerenderViewTasksTable();
     };
     // --- SEARCH STATE & HELPERS ---
     const searchState = {

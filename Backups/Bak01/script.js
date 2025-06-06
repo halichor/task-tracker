@@ -1,4 +1,358 @@
+// --- Inline Validation for Login ---
+const loginUsernameInput = document.getElementById("login-username");
+const loginPasswordInput = document.getElementById("login-password");
+loginUsernameInput.addEventListener("input", function () {
+    if (!this.value.trim()) {
+        setFieldError(this, "Username is required.");
+    } else {
+        clearFieldError(this);
+    }
+});
+loginPasswordInput.addEventListener("input", function () {
+    if (!this.value) {
+        setFieldError(this, "Password is required.");
+    } else {
+        clearFieldError(this);
+    }
+});
+
+// --- Inline Validation for Settings (user profile) ---
+if (typeof newUsernameInput !== 'undefined' && newUsernameInput) {
+    newUsernameInput.addEventListener("input", function () {
+        if (!this.value.trim()) {
+            setFieldError(this, "Username is required.");
+        } else {
+            clearFieldError(this);
+        }
+    });
+}
+if (typeof newPasswordInput !== 'undefined' && newPasswordInput) {
+    newPasswordInput.addEventListener("input", function () {
+        if (!this.value) {
+            setFieldError(this, "Password is required.");
+        } else {
+            clearFieldError(this);
+        }
+    });
+}
+// --- Toast Notification System ---
+function showToast(message, type = "info", duration = 3000) {
+    let toast = document.getElementById("global-toast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "global-toast";
+        toast.style.position = "fixed";
+        toast.style.bottom = "30px";
+        toast.style.left = "50%";
+        toast.style.transform = "translateX(-50%)";
+        toast.style.zIndex = 9999;
+        toast.style.minWidth = "200px";
+        toast.style.maxWidth = "90vw";
+        toast.style.padding = "12px 24px";
+        toast.style.borderRadius = "6px";
+        toast.style.fontSize = "1.1em";
+        toast.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
+        toast.style.display = "none";
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.display = "block";
+    toast.style.background = type === "success" ? "#198754" : type === "error" ? "#dc3545" : type === "warning" ? "#ffc107" : "#333";
+    toast.style.color = type === "warning" ? "#222" : "#fff";
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => { toast.style.display = "none"; }, duration);
+}
+
+// --- Inline Validation Helpers ---
+function setFieldError(input, message) {
+    input.classList.add("is-invalid");
+    let feedback = input.nextElementSibling;
+    if (!feedback || !feedback.classList.contains("invalid-feedback")) {
+        feedback = document.createElement("div");
+        feedback.className = "invalid-feedback";
+        input.parentNode.insertBefore(feedback, input.nextSibling);
+    }
+    feedback.textContent = message;
+}
+function clearFieldError(input) {
+    input.classList.remove("is-invalid");
+    let feedback = input.nextElementSibling;
+    if (feedback && feedback.classList.contains("invalid-feedback")) {
+        feedback.textContent = "";
+    }
+}
+// Spinners and Toasts
+function showGlobalSpinner(msg = "Loading...") {
+    const spinner = document.getElementById("global-spinner-indicator");
+    const text = document.getElementById("global-spinner-text");
+    if (spinner && text) {
+        text.textContent = msg;
+        spinner.style.display = "";
+    }
+    // Force a short delay so spinner is visible even for fast actions
+    window._spinnerLastShown = Date.now();
+}
+function hideGlobalSpinner() {
+    const spinner = document.getElementById("global-spinner-indicator");
+    if (spinner) {
+        // Ensure spinner is visible for at least 300ms
+        const minTime = 300;
+        const elapsed = Date.now() - (window._spinnerLastShown || 0);
+        if (elapsed < minTime) {
+            setTimeout(() => { spinner.style.display = "none"; }, minTime - elapsed);
+        } else {
+            spinner.style.display = "none";
+        }
+    }
+}
+
+function showGlobalToast(msg = "Done!") {
+    // Wait for DOM to be ready
+    if (!document.getElementById("global-toast")) {
+        document.addEventListener("DOMContentLoaded", () => showGlobalToast(msg));
+        return;
+    }
+    const toastEl = document.getElementById("global-toast");
+    const toastBody = document.getElementById("global-toast-body");
+    if (toastEl && toastBody) {
+        toastBody.textContent = msg;
+        // Bootstrap 5: getOrCreateInstance
+        const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+        toast.show();
+    }
+}
+
+window.showGlobalToast = showGlobalToast; function showGlobalToast(msg = "Done!") {
+    // Wait for DOM to be ready
+    if (!document.getElementById("global-toast")) {
+        document.addEventListener("DOMContentLoaded", () => showGlobalToast(msg));
+        return;
+    }
+    const toastEl = document.getElementById("global-toast");
+    const toastBody = document.getElementById("global-toast-body");
+    if (toastEl && toastBody) {
+        toastBody.textContent = msg;
+        // Bootstrap 5: getOrCreateInstance
+        const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+        toast.show();
+    }
+}
+window.showGlobalToast = showGlobalToast;
+function finishWithToast(message, delay = 100) {
+    setTimeout(() => {
+        hideGlobalSpinner();
+        showGlobalToast(message);
+    }, delay);
+}
+
+// Date formatting
+function formatDateYMD(dateInput) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let d;
+    if (typeof dateInput === "string") {
+        // Accepts "YYYY-MM-DD"
+        const [y, m, day] = dateInput.split("-");
+        d = new Date(Number(y), Number(m) - 1, Number(day));
+    } else if (dateInput instanceof Date) {
+        d = dateInput;
+    } else {
+        return "";
+    }
+    return `${d.getFullYear()} ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+function formatDateFull(dateInput) {
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    const days = [
+        "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+    ];
+    let d;
+    if (typeof dateInput === "string") {
+        // Accepts "YYYY-MM-DD"
+        const [y, m, day] = dateInput.split("-");
+        d = new Date(Number(y), Number(m) - 1, Number(day));
+    } else if (dateInput instanceof Date) {
+        d = dateInput;
+    } else {
+        return "";
+    }
+    return `${d.getFullYear()} ${months[d.getMonth()]} ${d.getDate()}, ${days[d.getDay()]}`;
+}
+
 (() => {
+    // --- Dark Mode & Palette Toggle ---
+    const darkModeToggleBtn = document.getElementById('dark-mode-toggle-btn');
+    const darkModeToggleIcon = document.getElementById('dark-mode-toggle-icon');
+    const darkModeToggleLabel = document.getElementById('dark-mode-toggle-label');
+    const paletteToggleBtn = document.getElementById('palette-toggle-btn');
+
+    // --- Palette/Theme helpers ---
+    const PALETTES = [
+        { key: 'blu', name: 'Blue' },
+        { key: 'pnk', name: 'Pink' },
+        { key: 'org', name: 'Orange' },
+        { key: 'ylw', name: 'Yellow' },
+        { key: 'prp', name: 'Purple' },
+        { key: 'grn', name: 'Green' },
+    ];
+    // Per-user palette/theme helpers
+    function getUserTheme(username) {
+        if (!username) return null;
+        return localStorage.getItem('tm_theme_' + username);
+    }
+    function setUserTheme(username, theme) {
+        if (!username) return;
+        localStorage.setItem('tm_theme_' + username, theme);
+    }
+    function getUserPalette(username) {
+        if (!username) return null;
+        return localStorage.getItem('tm_palette_' + username);
+    }
+    function setUserPalette(username, palette) {
+        if (!username) return;
+        localStorage.setItem('tm_palette_' + username, palette);
+    }
+    // Global fallback (for login screen)
+    function getPreferredTheme() {
+        return localStorage.getItem('tm_theme') || 'light';
+    }
+    function setPreferredTheme(theme) {
+        localStorage.setItem('tm_theme', theme);
+    }
+    function getPreferredPalette() {
+        return localStorage.getItem('tm_palette') || 'blu';
+    }
+    function setPreferredPalette(palette) {
+        localStorage.setItem('tm_palette', palette);
+    }
+    function applyThemeAndPalette(theme, palette) {
+        document.body.setAttribute('data-theme', theme);
+        document.body.setAttribute('data-palette', palette);
+        // Also set on #app for extra CSS specificity if needed
+        const appDiv = document.getElementById('app');
+        if (appDiv) {
+            appDiv.setAttribute('data-theme', theme);
+            appDiv.setAttribute('data-palette', palette);
+        }
+        // Update icon/label
+        if (theme === 'dark') {
+            if (darkModeToggleIcon) darkModeToggleIcon.className = 'bi bi-sun';
+            if (darkModeToggleLabel) darkModeToggleLabel.textContent = 'Light Mode';
+        } else {
+            if (darkModeToggleIcon) darkModeToggleIcon.className = 'bi bi-moon';
+            if (darkModeToggleLabel) darkModeToggleLabel.textContent = 'Dark Mode';
+        }
+        document.documentElement.style.colorScheme = theme;
+        // Update palette button label
+        if (paletteToggleBtn) {
+            const pal = PALETTES.find(p => p.key === palette);
+            paletteToggleBtn.innerHTML = `<span class="bi bi-palette"></span> ${pal ? pal.name : 'Palette'}`;
+        }
+    }
+
+    // On load, set theme and palette
+    // If on login screen, always use blue-light
+    let currentTheme = 'light';
+    let currentPalette = 'blu';
+    if (document.getElementById('auth') && document.getElementById('auth').style.display !== 'none') {
+        // Login screen: force blue-light
+        currentTheme = 'light';
+        currentPalette = 'blu';
+    } else {
+        // App: use last user or global
+        const savedUser = sessionStorage.getItem('tm_currentUser');
+        if (savedUser) {
+            currentTheme = getUserTheme(savedUser) || getPreferredTheme();
+            currentPalette = getUserPalette(savedUser) || getPreferredPalette();
+        } else {
+            currentTheme = getPreferredTheme();
+            currentPalette = getPreferredPalette();
+        }
+    }
+    applyThemeAndPalette(currentTheme, currentPalette);
+
+    // Dark mode toggle
+    if (darkModeToggleBtn) {
+        darkModeToggleBtn.addEventListener('click', () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            // Save per-user if logged in
+            if (currentUser) {
+                setUserTheme(currentUser, currentTheme);
+            } else {
+                setPreferredTheme(currentTheme);
+            }
+            applyThemeAndPalette(currentTheme, currentPalette);
+        });
+    }
+
+    // Palette dropdown setup
+    if (paletteToggleBtn) {
+        paletteToggleBtn.style.display = 'inline-block';
+        // Set label
+        const pal = PALETTES.find(p => p.key === currentPalette);
+        const paletteToggleLabel = document.getElementById('palette-toggle-label');
+        if (paletteToggleLabel && pal) paletteToggleLabel.textContent = pal.name;
+        // Build dropdown
+        const dropdownMenu = document.getElementById('palette-dropdown-menu');
+        if (dropdownMenu) {
+            dropdownMenu.innerHTML = '';
+            PALETTES.forEach(p => {
+                const li = document.createElement('li');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'dropdown-item' + (p.key === currentPalette ? ' active' : '');
+                btn.textContent = p.name;
+                btn.dataset.palette = p.key;
+                btn.addEventListener('click', () => {
+                    currentPalette = p.key;
+                    // Save per-user if logged in
+                    if (currentUser) {
+                        setUserPalette(currentUser, currentPalette);
+                    } else {
+                        setPreferredPalette(currentPalette);
+                    }
+                    applyThemeAndPalette(currentTheme, currentPalette);
+                    // Update active state
+                    document.querySelectorAll('#palette-dropdown-menu .dropdown-item').forEach(el => el.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (paletteToggleLabel) paletteToggleLabel.textContent = p.name;
+                    showToast(`Palette: ${p.name}`, 'info');
+                });
+                li.appendChild(btn);
+                dropdownMenu.appendChild(li);
+            });
+        }
+    }
+    // --- Show/Hide Password Toggle (Login) ---
+    const loginPasswordInput = document.getElementById("login-password");
+    if (loginPasswordInput && !document.getElementById('login-password-eye')) {
+        // Create eye icon button
+        const eyeBtn = document.createElement('button');
+        eyeBtn.type = 'button';
+        eyeBtn.id = 'login-password-eye';
+        eyeBtn.tabIndex = -1;
+        eyeBtn.className = 'btn btn-outline-secondary btn-sm position-absolute';
+        eyeBtn.style.right = '10px';
+        eyeBtn.style.top = '50%';
+        eyeBtn.style.transform = 'translateY(-50%)';
+        eyeBtn.innerHTML = '<span class="bi bi-eye"></span>';
+        // Wrap input in position-relative div if not already
+        const parent = loginPasswordInput.parentNode;
+        if (!parent.classList.contains('position-relative')) {
+            parent.classList.add('position-relative');
+        }
+        parent.appendChild(eyeBtn);
+        let visible = false;
+        eyeBtn.addEventListener('click', function () {
+            visible = !visible;
+            loginPasswordInput.type = visible ? 'text' : 'password';
+            eyeBtn.innerHTML = visible ? '<span class="bi bi-eye-slash"></span>' : '<span class="bi bi-eye"></span>';
+        });
+    }
+    // Remove old applyTheme references (now handled by applyThemeAndPalette)
     // Data keys and current user var
     const LS_USERS_KEY = "tm_users";
     const LS_TASKS_KEY = "tm_tasks";
@@ -50,10 +404,32 @@
     const userListUl = document.getElementById("user-list");
 
     // Archive
-    const archiveDateDisplay = document.getElementById("archive-date-display");
     const archiveTasksList = document.getElementById("archive-tasks-list");
 
+    // Users
+    const adminNewSurname = document.getElementById("admin-new-surname");
+    const adminNewFirstname = document.getElementById("admin-new-firstname");
+    const adminNewMiddlename = document.getElementById("admin-new-middlename");
+    const adminNewDesignation = document.getElementById("admin-new-designation");
+
     // --- Helpers ---
+    function wrapAsyncWithSpinnerToast(obj, fnName, { pending, done, fail }) {
+        const orig = obj[fnName];
+        obj[fnName] = async function (...args) {
+            showGlobalSpinner(pending);
+            try {
+                const result = await orig.apply(this, args);
+                hideGlobalSpinner();
+                showGlobalToast(done);
+                return result;
+            } catch (e) {
+                hideGlobalSpinner();
+                showGlobalToast(fail);
+                throw e;
+            }
+        };
+    }
+
     // Modals
     async function showAlertModal(message) {
         return new Promise((resolve) => {
@@ -94,6 +470,8 @@
         });
         await batch.commit();
     }
+    window.saveUsers = saveUsers;
+    wrapAsyncWithSpinnerToast(window, "saveUsers", { pending: "Saving users...", done: "Users saved!", fail: "Failed to save users." });
 
     // Tasks
     async function getTasks() {
@@ -113,6 +491,8 @@
         });
         await batch.commit();
     }
+    window.saveTasks = saveTasks;
+    wrapAsyncWithSpinnerToast(window, "saveTasks", { pending: "Saving tasks...", done: "Tasks saved!", fail: "Failed to save tasks." });
 
     // Holidays
     const LS_HOLIDAYS_KEY = "tm_holidays";
@@ -130,6 +510,9 @@
         });
         await batch.commit();
     }
+    window.saveHolidays = saveHolidays;
+    wrapAsyncWithSpinnerToast(window, "saveHolidays", { pending: "Saving holidays...", done: "Holidays saved!", fail: "Failed to save holidays." });
+
     async function renderHolidaysList() {
         const holidays = await getHolidays();
         const listDiv = document.getElementById('holidays-list');
@@ -142,7 +525,7 @@
         holidays.forEach((h, idx) => {
             const li = document.createElement('li');
             li.className = "list-group-item d-flex justify-content-between align-items-center";
-            li.textContent = `${h.name} (${h.date})${h.repeat ? " [Repeats]" : ""}`;
+            li.textContent = `${h.name} (${formatDateYMD(h.date)})${h.repeat ? " [Repeats]" : ""}`;
             const delBtn = document.createElement('button');
             delBtn.className = "btn btn-sm btn-danger";
             delBtn.textContent = "Delete";
@@ -196,6 +579,9 @@
         });
         await batch.commit();
     }
+    window.saveOrigins = saveOrigins;
+    wrapAsyncWithSpinnerToast(window, "saveOrigins", { pending: "Saving origins...", done: "Origins saved!", fail: "Failed to save origins." });
+
     async function renderOriginsAdmin() {
         const container = document.getElementById("origins-admin-list");
         const origins = await getOrigins();
@@ -261,8 +647,14 @@
     });
     async function setupOriginsAdminTab() {
         const isAdmin = currentUser === "admin";
-        document.getElementById("origins-admin-section").style.display = isAdmin ? "" : "none";
-        if (isAdmin) renderOriginsAdmin();
+        const section = document.getElementById("origins-admin-section");
+        if (section) section.style.display = isAdmin ? "" : "none";
+        if (isAdmin) {
+            renderOriginsAdmin();
+        } else {
+            const originsAdminList = document.getElementById('origins-admin-list');
+            if (originsAdminList) originsAdminList.innerHTML = "";
+        }
     }
     async function populateOriginDropdown() {
         const select = document.getElementById("task-origin-input");
@@ -286,6 +678,12 @@
         authDiv.style.display = "none";
         appDiv.style.display = "block";
         currentUserNameSpan.textContent = currentUser;
+        // On login, load and apply user palette/theme
+        let userTheme = getUserTheme(currentUser) || 'light';
+        let userPalette = getUserPalette(currentUser) || 'blu';
+        currentTheme = userTheme;
+        currentPalette = userPalette;
+        applyThemeAndPalette(currentTheme, currentPalette);
         setupAdminTab();
         setupOriginsAdminTab();
         populateOriginDropdown();
@@ -294,14 +692,14 @@
         clearLoginInputs();
         clearSettingsInputs();
     }
-    loginBtn.addEventListener("click", () => {
+    loginBtn.addEventListener("click", async () => {
         const username = document.getElementById("login-username").value.trim();
         const password = document.getElementById("login-password").value;
         if (!username || !password) {
             loginError.textContent = "Please enter username and password.";
             return;
         }
-        if (validateLogin(username, password)) {
+        if (await validateLogin(username, password)) {
             currentUser = username;
             sessionStorage.setItem(SESSION_USER_KEY, currentUser);
             loginError.textContent = "";
@@ -315,10 +713,19 @@
         sessionStorage.removeItem(SESSION_USER_KEY);
         authDiv.style.display = "block";
         appDiv.style.display = "none";
+        // On logout, force login default palette/theme
+        currentTheme = 'light';
+        currentPalette = 'blu';
+        applyThemeAndPalette(currentTheme, currentPalette);
         clearLoginInputs();
         clearSettingsInputs();
         clearTasksDisplay();
         clearAdminUserList();
+        // Hide and clear mass editor user select on logout
+        const userSelectContainer = document.getElementById("mass-editor-user-select-container");
+        const userSelect = document.getElementById("mass-editor-user-select");
+        if (userSelectContainer) userSelectContainer.style.display = "none";
+        if (userSelect) userSelect.innerHTML = "";
     });
     async function clearLoginInputs() {
         document.getElementById("login-username").value = "";
@@ -346,52 +753,218 @@
         const adminUserMgmt = document.getElementById('admin-user-mgmt');
         if (userMgmtLi) userMgmtLi.style.display = isAdmin ? "" : "none";
         if (adminUserMgmt) adminUserMgmt.style.display = isAdmin ? "" : "none";
-        if (isAdmin) loadAdminUserList();
+        if (isAdmin) {
+            loadAdminUserList();
+        } else {
+            clearAdminUserList();
+        }
     }
     async function loadAdminUserList() {
         const users = await getUsers();
         userListUl.innerHTML = "";
-        Object.keys(users).forEach(username => {
-            if (username === "admin") return; // Don't show admin in the list
+        Object.values(users).forEach(user => {
+            if (user.username === "admin") return;
             const li = document.createElement("li");
-            li.className = "list-group-item d-flex justify-content-between align-items-center";
-            li.textContent = username;
+            li.className = "list-group-item";
+
+            // Display row (default)
+            const displayDiv = document.createElement("div");
+            displayDiv.className = "d-flex align-items-center gap-2";
+            displayDiv.innerHTML = `
+            <span style="font-weight:bold;">${escapeHTML(user.surname)}, ${escapeHTML(user.firstname)} ${escapeHTML(user.middlename)}</span>
+            <span class="text-muted ms-2">${escapeHTML(user.username)}</span>
+            <span class="ms-2">${escapeHTML(user.designation)}</span>
+        `;
+            const manageBtn = document.createElement("button");
+            manageBtn.className = "btn btn-sm btn-secondary ms-auto";
+            manageBtn.textContent = "Manage";
+            displayDiv.appendChild(manageBtn);
+
+            // Edit row (hidden by default)
+            const editDiv = document.createElement("div");
+            editDiv.className = "align-items-center gap-2"; // No d-flex by default!
+            editDiv.style.display = "none";
+
+            // Editable fields
+            const surnameInput = document.createElement("input");
+            surnameInput.type = "text";
+            surnameInput.value = user.surname;
+            surnameInput.className = "form-control form-control-sm";
+            surnameInput.style.maxWidth = "120px";
+
+            const firstnameInput = document.createElement("input");
+            firstnameInput.type = "text";
+            firstnameInput.value = user.firstname;
+            firstnameInput.className = "form-control form-control-sm";
+            firstnameInput.style.maxWidth = "120px";
+
+            const middlenameInput = document.createElement("input");
+            middlenameInput.type = "text";
+            middlenameInput.value = user.middlename;
+            middlenameInput.className = "form-control form-control-sm";
+            middlenameInput.style.maxWidth = "120px";
+
+            const usernameInput = document.createElement("input");
+            usernameInput.type = "text";
+            usernameInput.value = user.username;
+            usernameInput.className = "form-control form-control-sm";
+            usernameInput.style.maxWidth = "120px";
+
+            const passwordInput = document.createElement("input");
+            passwordInput.type = "password";
+            passwordInput.placeholder = "New password";
+            passwordInput.className = "form-control form-control-sm";
+            passwordInput.style.maxWidth = "120px";
+
+            const designationInput = document.createElement("input");
+            designationInput.type = "text";
+            designationInput.value = user.designation;
+            designationInput.className = "form-control form-control-sm";
+            designationInput.style.maxWidth = "120px";
+
+            // Save, Cancel, Delete buttons
+            const saveBtn = document.createElement("button");
+            saveBtn.className = "btn btn-sm btn-primary";
+            saveBtn.textContent = "Save";
+
+            const cancelBtn = document.createElement("button");
+            cancelBtn.className = "btn btn-sm btn-secondary";
+            cancelBtn.textContent = "Cancel";
+
             const delBtn = document.createElement("button");
             delBtn.className = "btn btn-sm btn-danger";
             delBtn.textContent = "Delete";
+
+            // Save logic
+            saveBtn.onclick = async () => {
+                const newUsername = usernameInput.value.trim();
+                const newPassword = passwordInput.value;
+                const surname = surnameInput.value.trim();
+                const firstname = firstnameInput.value.trim();
+                const middlename = middlenameInput.value.trim();
+                const designation = designationInput.value.trim();
+                if (!newUsername || !surname || !firstname || !designation) {
+                    await showAlertModal("Please fill in all required fields.");
+                    return;
+                }
+                if (newUsername !== user.username && users[newUsername]) {
+                    await showAlertModal("Username already exists.");
+                    return;
+                }
+                let msg = `Change username from "${user.username}" to "${newUsername}"?`;
+                if (newPassword) msg += `\nPassword will be updated.`;
+                if (!await showConfirmModal(msg)) return;
+
+                const usersData = await getUsers();
+                // If username changed, move data
+                if (newUsername !== user.username) {
+                    usersData[newUsername] = { ...usersData[user.username] };
+                    usersData[newUsername].surname = surname;
+                    usersData[newUsername].firstname = firstname;
+                    usersData[newUsername].middlename = middlename;
+                    usersData[newUsername].designation = designation;
+                    if (newPassword) usersData[newUsername].password = newPassword;
+                    delete usersData[user.username];
+                    // Move tasks
+                    const tasks = await getTasks();
+                    if (tasks[user.username]) {
+                        tasks[newUsername] = tasks[user.username];
+                        delete tasks[user.username];
+                        await saveTasks(tasks);
+                    }
+                } else {
+                    usersData[user.username].surname = surname;
+                    usersData[user.username].firstname = firstname;
+                    usersData[user.username].middlename = middlename;
+                    usersData[user.username].designation = designation;
+                    if (newPassword) usersData[user.username].password = newPassword;
+                }
+                await saveUsers(usersData);
+                await showAlertModal("User updated.");
+                loadAdminUserList();
+            };
+
+            // Cancel logic
+            cancelBtn.onclick = () => {
+                editDiv.style.display = "none";
+                editDiv.classList.remove("d-flex"); // Remove d-flex when hiding
+                displayDiv.style.display = "";
+            };
+
+            // Delete logic
             delBtn.onclick = async () => {
-                if (await showConfirmModal(`Delete user "${username}"? This cannot be undone.`)) {
+                const uname = usernameInput.value.trim();
+                if (uname === "admin") {
+                    await showAlertModal("Cannot delete admin user.");
+                    return;
+                }
+                if (await showConfirmModal(`Delete user "${uname}"? This cannot be undone.`)) {
                     const users = await getUsers();
                     const tasks = await getTasks();
-                    delete users[username];
-                    delete tasks[username];
+                    delete users[uname];
+                    delete tasks[uname];
                     await saveUsers(users);
                     await saveTasks(tasks);
                     ensureAllUsersTaskStructure();
                     loadAdminUserList();
                 }
             };
-            li.appendChild(delBtn);
+
+            // Add fields/buttons to editDiv
+            editDiv.appendChild(surnameInput);
+            editDiv.appendChild(firstnameInput);
+            editDiv.appendChild(middlenameInput);
+            editDiv.appendChild(usernameInput);
+            editDiv.appendChild(passwordInput);
+            editDiv.appendChild(designationInput);
+            editDiv.appendChild(saveBtn);
+            editDiv.appendChild(cancelBtn);
+            editDiv.appendChild(delBtn);
+
+            manageBtn.onclick = () => {
+                displayDiv.style.display = "none";
+                editDiv.style.display = "";
+                editDiv.classList.add("d-flex"); // Only add d-flex when showing
+                passwordInput.value = "";
+            };
+
+            li.appendChild(displayDiv);
+            li.appendChild(editDiv);
             userListUl.appendChild(li);
         });
     }
     adminCreateUserBtn && adminCreateUserBtn.addEventListener("click", async () => {
         const username = adminNewUsername.value.trim();
         const password = adminNewPassword.value;
-        if (!username || !password) {
-            await showAlertModal("Please enter a username and password.");
+        const surname = adminNewSurname.value.trim();
+        const firstname = adminNewFirstname.value.trim();
+        const middlename = adminNewMiddlename.value.trim();
+        const designation = adminNewDesignation.value.trim();
+        if (!username || !password || !surname || !firstname || !designation) {
+            await showAlertModal("Please fill in all required fields.");
             return;
         }
-        const users = await getUsers(); // <-- fetch users here!
+        const users = await getUsers();
         if (users[username]) {
             await showAlertModal("User already exists.");
             return;
         }
-        users[username] = { password };
+        users[username] = {
+            username,
+            password,
+            surname,
+            firstname,
+            middlename,
+            designation
+        };
         await saveUsers(users);
         await ensureAllUsersTaskStructure();
         adminNewUsername.value = "";
         adminNewPassword.value = "";
+        adminNewSurname.value = "";
+        adminNewFirstname.value = "";
+        adminNewMiddlename.value = "";
+        adminNewDesignation.value = "";
         loadAdminUserList();
     });
 
@@ -403,6 +976,7 @@
         const today = new Date();
         const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
         const newTask = {
+            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
             origin: taskObj.origin,
             activity: taskObj.activity,
             remarks: taskObj.remarks || "",
@@ -418,28 +992,62 @@
         await saveTasks(tasks);
         console.log("Saved tasks:", tasks);
     }
-    addTaskBtn.addEventListener("click", () => {
-        const origin = document.getElementById("task-origin-input").value;
-        const activity = document.getElementById("task-activity-input").value.trim();
-        const remarks = document.getElementById("task-remarks-input").value.trim();
-        let taskDate = document.getElementById("task-date-input").value;
-        if (!taskDate) {
-            // Default to today if blank
-            const today = new Date();
-            taskDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-            document.getElementById("task-date-input").value = taskDate;
+    window.addTaskToDate = addTaskToDate;
+    wrapAsyncWithSpinnerToast(window, "addTaskToDate", { pending: "Adding task...", done: "Task added!", fail: "Failed to add task." });
+
+    async function ensureAllTasksHaveIDs() {
+        const tasks = await getTasks();
+        let changed = false;
+        Object.values(tasks).forEach(user => {
+            if (Array.isArray(user.today)) {
+                user.today.forEach(task => {
+                    if (!task.id) {
+                        task.id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+                        changed = true;
+                    }
+                });
+            }
+            if (user.archive) {
+                Object.values(user.archive).forEach(arr => {
+                    arr.forEach(task => {
+                        if (!task.id) {
+                            task.id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+                            changed = true;
+                        }
+                    });
+                });
+            }
+        });
+        if (changed) await saveTasks(tasks);
+    }
+
+    addTaskBtn.addEventListener("click", async () => {
+        showGlobalSpinner("Adding task...");
+        try {
+            const origin = document.getElementById("task-origin-input").value;
+            const activity = document.getElementById("task-activity-input").value.trim();
+            const remarks = document.getElementById("task-remarks-input").value.trim();
+            let taskDate = document.getElementById("task-date-input").value;
+            if (!taskDate) {
+                const today = new Date();
+                taskDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+                document.getElementById("task-date-input").value = taskDate;
+            }
+            const tagsInput = document.getElementById('task-tags-input');
+            let tags = [];
+            if (tagsInput && tagsInput.value) {
+                tags = tagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
+            }
+            if (!origin || !activity || !taskDate) return;
+            await addTaskToDate({ origin, activity, remarks, tags }, taskDate);
+            document.getElementById("task-activity-input").value = "";
+            document.getElementById("task-remarks-input").value = "";
+            $('#task-date-input').datepicker('setDate', new Date());
+            await loadTodayTasks();
+            finishWithToast("Task added!");
+        } catch (e) {
+            finishWithToast("Failed to add task!");
         }
-        const tagsInput = document.getElementById('task-tags-input');
-        let tags = [];
-        if (tagsInput && tagsInput.value) {
-            tags = tagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
-        }
-        if (!origin || !activity || !taskDate) return;
-        addTaskToDate({ origin, activity, remarks, tags }, taskDate);
-        document.getElementById("task-activity-input").value = "";
-        document.getElementById("task-remarks-input").value = "";
-        $('#task-date-input').datepicker('setDate', new Date());
-        loadTodayTasks();
     });
     async function loadTodayTasks() {
         if (typeof rerenderTodayTable === "function") {
@@ -455,10 +1063,12 @@
         const tasks = await getTasks();
         const user = tasks[massEditorCurrentUser];
         let allTasks = [];
-        if (user && user.today) allTasks = allTasks.concat(user.today.map(t => ({ ...t })));
+        if (user && Array.isArray(user.today)) allTasks = allTasks.concat(user.today.map(t => ({ ...t })));
         if (user && user.archive) {
             Object.values(user.archive).forEach(arr => {
-                allTasks = allTasks.concat(arr.map(t => ({ ...t })));
+                if (Array.isArray(arr)) {
+                    allTasks = allTasks.concat(arr.map(t => ({ ...t })));
+                }
             });
         }
 
@@ -523,8 +1133,8 @@
         const tasks = await getTasks();
         if (!todayEditMode) {
             todayEditMode = true;
-            window.todayEditOriginal = JSON.parse(JSON.stringify(await getTasks()[currentUser].today));
-            window.todayEditPending = JSON.parse(JSON.stringify(await getTasks()[currentUser].today));
+            window.todayEditOriginal = JSON.parse(JSON.stringify(tasks[currentUser].today));
+            window.todayEditPending = JSON.parse(JSON.stringify(tasks[currentUser].today));
             todayEditBtn.querySelector("#today-edit-btn-label").textContent = "DONE";
             todayDeleteSelectedBtn.style.display = "";
             todaySelectedTasks.clear();
@@ -532,6 +1142,7 @@
         } else {
             const confirmed = await showConfirmModal("Save all changes to today's tasks?");
             if (confirmed) {
+                showGlobalSpinner("Saving changes...");
                 const today = new Date();
                 const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
                 // Split tasks into those that are still today and those that moved
@@ -552,9 +1163,12 @@
                     tasks[currentUser].archive[date].push(...arr);
                 });
                 await saveTasks(tasks);
+                finishWithToast("Changes saved!");
             } else {
+                showGlobalSpinner("Reverting changes...");
                 tasks[currentUser].today = window.todayEditOriginal;
                 await saveTasks(tasks);
+                finishWithToast("Changes reverted");
             }
             todayEditMode = false;
             window.todayEditPending = null;
@@ -606,9 +1220,11 @@
         });
 
         if (!todayEditMode) {
+            showGlobalSpinner("Deleting tasks...");
             const tasks = await getTasks();
             tasks[currentUser].today = arr;
             await saveTasks(tasks);
+            finishWithToast("Tasks deleted!");
         }
         todaySelectedTasks.clear();
         rerenderTodayTable();
@@ -622,19 +1238,21 @@
     window.archiveEditOriginal = null;
     window.archiveSelectedTasks = new Set();
     archiveEditBtn.addEventListener("click", async () => {
-        const tasks = await getTasks();
         const dateStr = document.getElementById('archive-date-display').textContent;
         if (!archiveEditMode) {
-            archiveEditMode = true;
-            window.archiveEditOriginal = JSON.parse(JSON.stringify(await getTasks()[currentUser].archive[dateStr] || []));
-            window.archiveEditPending = JSON.parse(JSON.stringify(await getTasks()[currentUser].archive[dateStr] || []));
+            archiveEditMode = true; // SET THIS FIRST!
+            const tasks = await getTasks();
+            window.archiveEditOriginal = JSON.parse(JSON.stringify(tasks[currentUser].archive[dateStr] || []));
+            window.archiveEditPending = JSON.parse(JSON.stringify(tasks[currentUser].archive[dateStr] || []));
             archiveEditBtn.querySelector("#archive-edit-btn-label").textContent = "DONE";
             archiveDeleteSelectedBtn.style.display = "";
             archiveSelectedTasks.clear();
             rerenderArchiveTable();
         } else {
+            const tasks = await getTasks();
             const confirmed = await showConfirmModal("Save all changes to this day's archive?");
             if (confirmed) {
+                showGlobalSpinner("Saving archive...");
                 const today = new Date();
                 const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
                 const stillHere = [];
@@ -659,9 +1277,12 @@
                     }
                 });
                 await saveTasks(tasks);
+                finishWithToast("Archive updated!");
             } else {
+                showGlobalSpinner("Reverting archive...");
                 tasks[currentUser].archive[dateStr] = window.archiveEditOriginal;
                 await saveTasks(tasks);
+                finishWithToast("Changes reverted.");
             }
             archiveEditMode = false;
             window.archiveEditPending = null;
@@ -714,8 +1335,10 @@
         });
 
         if (!archiveEditMode) {
+            showGlobalSpinner("Deleting tasks...");
             tasks[currentUser].archive[dateStr] = arr;
             await saveTasks(tasks);
+            finishWithToast("Tasks deleted!");
         }
         archiveSelectedTasks.clear();
         rerenderArchiveTable();
@@ -756,6 +1379,135 @@
 
     // --- Datepicker and holiday setup ---
     $(document).ready(async function () {
+        // --- Tag Input with Suggestions ---
+        // Helper: get all tags from tasks
+        async function getAllTagsList() {
+            const tags = await collectAllTags();
+            return tags;
+        }
+
+        // Tag input logic
+        const tagInputContainer = document.getElementById('task-tags-input-container');
+        const tagSuggestions = document.getElementById('tags-suggestions');
+        let tagInputTags = [];
+        let tagInput = document.createElement('input');
+        tagInput.type = 'text';
+        tagInput.className = 'tag-input-field';
+        tagInput.style.border = 'none';
+        tagInput.style.outline = 'none';
+        tagInput.style.flex = '1 1 60px';
+        tagInput.style.minWidth = '60px';
+        tagInput.style.background = 'transparent';
+        tagInput.autocomplete = 'off';
+        tagInputContainer.appendChild(tagInput);
+
+        function renderTagChips() {
+            // Remove all except the input
+            Array.from(tagInputContainer.children).forEach(child => {
+                if (child !== tagInput) tagInputContainer.removeChild(child);
+            });
+            tagInputTags.forEach((tag, idx) => {
+                const chip = document.createElement('span');
+                chip.className = 'badge bg-primary me-1 mb-1 d-flex align-items-center';
+                chip.style.fontSize = '1em';
+                chip.innerHTML = `#${escapeHTML(tag)} <span style="cursor:pointer;margin-left:4px;" data-idx="${idx}">&times;</span>`;
+                chip.querySelector('span').onclick = function () {
+                    tagInputTags.splice(idx, 1);
+                    renderTagChips();
+                };
+                tagInputContainer.insertBefore(chip, tagInput);
+            });
+            tagInput.value = '';
+            tagInput.focus();
+        }
+
+        // Suggestion dropdown
+        async function showTagSuggestions(query) {
+            const allTags = await getAllTagsList();
+            const filtered = allTags.filter(t => t.toLowerCase().includes(query.toLowerCase()) && !tagInputTags.includes(t));
+            if (!query || filtered.length === 0) {
+                tagSuggestions.classList.remove('show');
+                tagSuggestions.style.display = 'none';
+                return;
+            }
+            tagSuggestions.innerHTML = filtered.map(t => `<button type="button" class="dropdown-item">#${escapeHTML(t)}</button>`).join('');
+            tagSuggestions.classList.add('show');
+            tagSuggestions.style.display = 'block';
+            const rect = tagInput.getBoundingClientRect();
+            tagSuggestions.style.left = '0px';
+            tagSuggestions.style.top = '100%';
+            tagSuggestions.style.position = 'absolute';
+            tagSuggestions.style.zIndex = 1050;
+            // Click on suggestion
+            tagSuggestions.querySelectorAll('button').forEach(btn => {
+                btn.onclick = function () {
+                    const tag = btn.textContent.replace(/^#/, '');
+                    tagInputTags.push(tag);
+                    renderTagChips();
+                    tagSuggestions.classList.remove('show');
+                    tagSuggestions.style.display = 'none';
+                };
+            });
+        }
+
+        tagInput.addEventListener('input', async function (e) {
+            showTagSuggestions(tagInput.value);
+        });
+
+        tagInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                e.preventDefault();
+                let val = tagInput.value.trim();
+                if (val && !tagInputTags.includes(val)) {
+                    tagInputTags.push(val);
+                    renderTagChips();
+                }
+                tagSuggestions.classList.remove('show');
+                tagSuggestions.style.display = 'none';
+            } else if (e.key === 'Backspace' && tagInput.value === '' && tagInputTags.length > 0) {
+                tagInputTags.pop();
+                renderTagChips();
+            }
+        });
+
+        tagInput.addEventListener('focus', function () {
+            showTagSuggestions(tagInput.value);
+        });
+        tagInput.addEventListener('blur', function () {
+            setTimeout(() => {
+                tagSuggestions.classList.remove('show');
+                tagSuggestions.style.display = 'none';
+            }, 200);
+        });
+
+        // When submitting a task, use tagInputTags
+        const origAddTaskBtnHandler = addTaskBtn.onclick;
+        addTaskBtn.onclick = async function (e) {
+            // Use tagInputTags for tags
+            const origin = document.getElementById("task-origin-input").value;
+            const activity = document.getElementById("task-activity-input").value.trim();
+            const remarks = document.getElementById("task-remarks-input").value.trim();
+            let taskDate = document.getElementById("task-date-input").value;
+            if (!taskDate) {
+                const today = new Date();
+                taskDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+                document.getElementById("task-date-input").value = taskDate;
+            }
+            const tags = tagInputTags.slice();
+            if (!origin || !activity || !taskDate) return;
+            await addTaskToDate({ origin, activity, remarks, tags }, taskDate);
+            document.getElementById("task-activity-input").value = "";
+            document.getElementById("task-remarks-input").value = "";
+            $('#task-date-input').datepicker('setDate', new Date());
+            tagInputTags = [];
+            renderTagChips();
+            await loadTodayTasks();
+            finishWithToast("Task added!");
+        };
+        // If user presses enter in the tag input, don't submit the form
+        tagInput.form && tagInput.form.addEventListener('submit', e => e.preventDefault());
+        // Initialize chips if editing
+        renderTagChips();
         // HOLIDAY datepicker
         $('#holiday-datepicker').datepicker({
             format: 'yyyy-mm-dd',
@@ -782,20 +1534,22 @@
             document.getElementById('archive-date-display').textContent = date;
             loadArchiveDate(new Date(date));
         });
-        // VIEW TASKS datepicker
-        $('#view-tasks-date-group').datepicker({
+        // VIEW TASKS datepicker (inline, like archive)
+        $('#view-tasks-datepicker').datepicker({
             format: 'yyyy-mm-dd',
             todayHighlight: true,
             autoclose: true,
             orientation: "bottom auto"
         }).on('changeDate', async function (e) {
             const date = e.format('yyyy-mm-dd');
-            $('#view-tasks-date').val(date);
+            document.getElementById('view-tasks-date-display').textContent = date;
+            window.loadUsersTasksForDate && window.loadUsersTasksForDate();
         });
         // Set initial date for view tasks
         const today = new Date();
         const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-        $('#view-tasks-date').val(todayStr);
+        $('#view-tasks-datepicker').datepicker('setDate', todayStr);
+        document.getElementById('view-tasks-date-display').textContent = todayStr;
         // Set initial archive date display
         const todayArchive = new Date();
         const todayArchiveStr = todayArchive.getFullYear() + '-' + String(todayArchive.getMonth() + 1).padStart(2, '0') + '-' + String(todayArchive.getDate()).padStart(2, '0');
@@ -814,12 +1568,14 @@
             await showAlertModal("Please select a date and enter a holiday name.");
             return;
         }
+        showGlobalSpinner("Adding holiday...");
         const holidays = await getHolidays();
         holidays.push({ date, name, repeat });
         await saveHolidays(holidays);
         renderHolidaysList();
         document.getElementById('holiday-name').value = "";
         document.getElementById('holiday-repeat').checked = false;
+        finishWithToast("Holiday added!");
     });
 
     // --- Helper for Holidays ---
@@ -839,26 +1595,36 @@
     // --- Confirmation Modal ---
     async function showConfirmModal(message) {
         return new Promise((resolve) => {
-            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            const modalEl = document.getElementById('confirmModal');
+            const modal = new bootstrap.Modal(modalEl);
             document.getElementById('confirmModalBody').textContent = message;
             const okBtn = document.getElementById('confirmModalOk');
             const cancelBtn = document.getElementById('confirmModalCancel');
-            async function cleanup(result) {
+            let result = false;
+            let resolved = false;
+            function cleanup() {
                 okBtn.removeEventListener('click', onOk);
                 cancelBtn.removeEventListener('click', onCancel);
-                document.getElementById('confirmModal').removeEventListener('hidden.bs.modal', onCancel);
-                resolve(result);
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
             }
-            async function onOk() {
+            function onOk() {
+                result = true;
                 modal.hide();
-                cleanup(true);
             }
-            async function onCancel() {
-                cleanup(false);
+            function onCancel() {
+                result = false;
+                modal.hide();
+            }
+            function onHidden() {
+                if (!resolved) {
+                    resolved = true;
+                    cleanup();
+                    resolve(result);
+                }
             }
             okBtn.addEventListener('click', onOk);
             cancelBtn.addEventListener('click', onCancel);
-            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', onCancel);
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
             modal.show();
         });
     }
@@ -880,15 +1646,16 @@
         if (isAdmin) {
             // Populate user select
             userSelect.innerHTML = "";
-            Object.keys(await getUsers()).forEach(u => {
+            const usersObj = await getUsers();
+            Object.keys(usersObj).forEach(u => {
                 const opt = document.createElement("option");
                 opt.value = u;
                 opt.textContent = u;
                 userSelect.appendChild(opt);
             });
             // Default to first user if not set
-            if (!massEditorCurrentUser || !await getUsers()[massEditorCurrentUser]) {
-                massEditorCurrentUser = userSelect.options[0].value;
+            if (!massEditorCurrentUser || !usersObj[massEditorCurrentUser]) {
+                massEditorCurrentUser = userSelect.options[0]?.value || null;
             }
             userSelect.value = massEditorCurrentUser;
             userSelect.onchange = async () => {
@@ -896,6 +1663,8 @@
                 applyMassEditorFilter();
             };
         } else {
+            // Always clear the user select for non-admins
+            userSelect.innerHTML = "";
             massEditorCurrentUser = currentUser;
         }
         applyMassEditorFilter();
@@ -908,7 +1677,7 @@
         // Find and update in correct array
         let found = false;
         if (user.today) {
-            let tIdx = user.today.findIndex(t => t.origin === task.origin && t.activity === task.activity && t.remarks === task.remarks && t.date === task.date);
+            let tIdx = user.today.findIndex(t => t.id === task.id);
             if (tIdx > -1) {
                 Object.assign(user.today[tIdx], changes);
                 found = true;
@@ -917,7 +1686,7 @@
         if (!found && user.archive) {
             Object.keys(user.archive).forEach(date => {
                 let arr = user.archive[date];
-                let tIdx = arr.findIndex(t => t.origin === task.origin && t.activity === task.activity && t.remarks === task.remarks && t.date === task.date);
+                let tIdx = arr.findIndex(t => t.id === task.id);
                 if (tIdx > -1) {
                     Object.assign(arr[tIdx], changes);
                     // If date changed, move to correct archive/today
@@ -944,32 +1713,40 @@
     const massEditorEditBtn = document.getElementById("mass-editor-edit-btn");
     const massEditorDeleteSelectedBtn = document.getElementById("mass-editor-delete-selected-btn");
     massEditorEditBtn.addEventListener("click", async () => {
+        if (!massEditorCurrentUser) {
+            await showAlertModal("No user selected for mass editing.");
+            return;
+        }
         const tasks = await getTasks();
-        const user = tasks[massEditorCurrentUser];
-        // Gather all tasks for the selected user
-        let allTasks = [];
-        if (user.today) allTasks = allTasks.concat(user.today.map(t => ({ ...t })));
-        if (user.archive) {
-            Object.values(user.archive).forEach(arr => {
-                allTasks = allTasks.concat(arr.map(t => ({ ...t })));
-            });
+        const userTasks = tasks[massEditorCurrentUser];
+        if (!userTasks) {
+            await showAlertModal("No tasks found for selected user.");
+            return;
         }
         if (!massEditorEditMode) {
             massEditorEditMode = true;
-            const userTasks = (await getTasks())[massEditorCurrentUser];
             let freshTasks = [];
-            if (userTasks && userTasks.today) freshTasks = freshTasks.concat(userTasks.today.map(t => ({ ...t })));
-            if (userTasks && userTasks.archive) Object.values(userTasks.archive).forEach(arr => freshTasks = freshTasks.concat(arr.map(t => ({ ...t }))));
+            if (Array.isArray(userTasks.today)) {
+                freshTasks = freshTasks.concat(userTasks.today.map(t => ({ ...t })));
+            }
+            if (userTasks.archive) {
+                Object.values(userTasks.archive).forEach(arr => {
+                    if (Array.isArray(arr)) {
+                        freshTasks = freshTasks.concat(arr.map(t => ({ ...t })));
+                    }
+                });
+            }
             window.massEditorEditOriginal = JSON.parse(JSON.stringify(freshTasks));
             window.massEditorEditPending = JSON.parse(JSON.stringify(freshTasks));
             document.getElementById("mass-editor-edit-btn-label").textContent = "DONE";
-            massEditorDeleteSelectedBtn.style.display = massEditorEditMode ? "" : "none";
             massEditorDeleteSelectedBtn.style.display = "";
             massEditorSelectedTasks.clear();
             rerenderMassEditorTable();
         } else {
+            const user = userTasks;
             const confirmed = await showConfirmModal("Save all changes in mass editor?");
             if (confirmed) {
+                showGlobalSpinner("Saving mass edits...");
                 // Save pending edits back to user.today and user.archive
                 let pending = window.massEditorEditPending;
                 user.today = pending.filter(t => {
@@ -988,7 +1765,9 @@
                     }
                 });
                 await saveTasks(tasks);
+                finishWithToast("Mass edits saved!");
             } else {
+                showGlobalSpinner("Reverting mass edits...");
                 // Revert
                 let orig = window.massEditorEditOriginal;
                 user.today = orig.filter(t => {
@@ -1006,8 +1785,8 @@
                     }
                 });
                 await saveTasks(tasks);
+                finishWithToast("Changes reverted.");
             }
-            applyMassEditorFilter();
             massEditorEditMode = false;
             window.massEditorEditPending = null;
             window.massEditorEditOriginal = null;
@@ -1047,12 +1826,15 @@
 
     // Mass delete
     document.getElementById("mass-editor-delete-selected-btn").addEventListener("click", async () => {
-        if (todaySelectedTasks.size === 0) {
+        if (massEditorSelectedTasks.size === 0) {
             await showAlertModal("No tasks selected.");
             return;
         }
         const confirmed = await showConfirmModal("Are you sure you want to delete the selected tasks?");
-        if (!confirmed) return;
+        if (!confirmed) {
+            applyMassEditorFilter(); // Fix: fully restore UI and event handlers after cancel
+            return;
+        }
         // Delete in reverse order to avoid reindexing
         const idxs = Array.from(massEditorSelectedTasks).sort((a, b) => b - a);
         if (massEditorEditMode && window.massEditorEditPending) {
@@ -1137,32 +1919,39 @@
     async function ensureUserAndTaskIDs() {
         const users = await getUsers();
         let changed = false;
-        Object.keys(users).forEach(username => {
+        for (const username of Object.keys(users)) {
             if (!users[username].id) {
-                users[username].id = uuidv4();
+                users[username].id = await uuidv4();
                 changed = true;
             }
-        });
+        }
         if (changed) await saveUsers(users);
 
         const tasks = await getTasks();
-        Object.keys(tasks).forEach(username => {
+        let tasksChanged = false;
+        for (const username of Object.keys(tasks)) {
             // Today
             if (Array.isArray(tasks[username].today)) {
-                tasks[username].today.forEach(task => {
-                    if (!task.id) task.id = uuidv4();
-                });
+                for (const task of tasks[username].today) {
+                    if (!task.id) {
+                        task.id = await uuidv4();
+                        tasksChanged = true;
+                    }
+                }
             }
             // Archive
             if (tasks[username].archive) {
-                Object.values(tasks[username].archive).forEach(arr => {
-                    arr.forEach(task => {
-                        if (!task.id) task.id = uuidv4();
-                    });
-                });
+                for (const arr of Object.values(tasks[username].archive)) {
+                    for (const task of arr) {
+                        if (!task.id) {
+                            task.id = await uuidv4();
+                            tasksChanged = true;
+                        }
+                    }
+                }
             }
-        });
-        await saveTasks(tasks);
+        }
+        if (tasksChanged) await saveTasks(tasks);
     }
 
     // Call this after login
@@ -1172,14 +1961,14 @@
     }
 
     // Replace afterLoginSetup() with afterLoginSetupWithIDs() in your login logic:
-    loginBtn.addEventListener("click", () => {
+    loginBtn.addEventListener("click", async () => {
         const username = document.getElementById("login-username").value.trim();
         const password = document.getElementById("login-password").value;
         if (!username || !password) {
             loginError.textContent = "Please enter username and password.";
             return;
         }
-        if (validateLogin(username, password)) {
+        if (await validateLogin(username, password)) {
             currentUser = username;
             sessionStorage.setItem(SESSION_USER_KEY, currentUser);
             loginError.textContent = "";
@@ -1491,27 +2280,42 @@
 
         // 3. Sorting
         if (options.sortKey) {
-            filtered.sort((a, b) => {
-                let valA = a[options.sortKey] || '';
-                let valB = b[options.sortKey] || '';
-                if (options.sortKey === 'tags') {
-                    valA = (a.tags || []).join(', ');
-                    valB = (b.tags || []).join(', ');
-                }
-                if (typeof valA === 'string') valA = valA.toLowerCase();
-                if (typeof valB === 'string') valB = valB.toLowerCase();
-                if (valA < valB) return options.sortAsc ? -1 : 1;
-                if (valA > valB) return options.sortAsc ? 1 : -1;
-                return 0;
-            });
+            // Special case for user full name sorting
+            if (options.sortKey === 'user') {
+                const users = await getUsers();
+                filtered.sort((a, b) => {
+                    let valA = users[a.user]
+                        ? `${users[a.user].surname}, ${users[a.user].firstname} ${users[a.user].middlename}`.toLowerCase()
+                        : (a.user || '');
+                    let valB = users[b.user]
+                        ? `${users[b.user].surname}, ${users[b.user].firstname} ${users[b.user].middlename}`.toLowerCase()
+                        : (b.user || '');
+                    if (valA < valB) return options.sortAsc ? -1 : 1;
+                    if (valA > valB) return options.sortAsc ? 1 : -1;
+                    return 0;
+                });
+            } else {
+                filtered.sort((a, b) => {
+                    let valA = a[options.sortKey] || '';
+                    let valB = b[options.sortKey] || '';
+                    if (options.sortKey === 'tags') {
+                        valA = (a.tags || []).join(', ');
+                        valB = (b.tags || []).join(', ');
+                    }
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+                    if (valA < valB) return options.sortAsc ? -1 : 1;
+                    if (valA > valB) return options.sortAsc ? 1 : -1;
+                    return 0;
+                });
+            }
         }
 
         // 4. Render table
         let html = `<table class="table table-sm table-bordered align-middle mb-0"><thead><tr>`;
 
         if (options.showUser) {
-            html += `<th style="position:relative;">User <span class="filter-icon" data-col="user" style="cursor:pointer;">&#x25BC;</span>
-<div class="dropdown-menu p-2" data-dropdown="user"></div></th>`;
+            html += `<th>User</th>`;
         }
 
         // Determine edit mode for this table
@@ -1543,26 +2347,34 @@
 
         html += `</tr></thead><tbody>`;
 
+        const users = options.showUser ? await getUsers() : {};
+        let origins = [];
+        if (options.editable && editMode && options.columns.some(col => col.key === 'origin')) {
+            origins = (await getOrigins()).filter(o => !o.archived);
+        }
+
         for (let idx = 0; idx < filtered.length; idx++) {
             const task = filtered[idx];
             html += `<tr data-row="${idx}">`;
 
-            if (options.showUser) html += `<td>${escapeHTML(task.user || '')}</td>`;
+            if (options.showUser) {
+                let userCell = task.user || '';
+                if (users[task.user]) {
+                    userCell = `${escapeHTML(users[task.user].surname)}, ${escapeHTML(users[task.user].firstname)} ${escapeHTML(users[task.user].middlename)}`;
+                }
+                html += `<td>${userCell}</td>`;
+            }
 
-            // Only show Edit col if edit mode is ON
             if (options.editable && editMode) {
                 html += `<td>
-                <input type="checkbox" class="row-select-checkbox" data-row="${idx}" style="margin-right:8px;">
-                <button class="btn btn-sm btn-outline-danger delete-btn" data-row="${idx}">Delete</button>
-            </td>`;
+            <input type="checkbox" class="row-select-checkbox" data-row="${idx}" style="margin-right:8px;">
+            <button class="btn btn-sm btn-outline-danger delete-btn" data-row="${idx}">Delete</button>
+        </td>`;
             }
 
             for (const col of options.columns) {
-                // Make fields editable in edit mode
                 if (options.editable && editMode) {
                     if (col.key === 'origin') {
-                        // FIX: Await getOrigins() before filter
-                        const origins = (await getOrigins()).filter(o => !o.archived);
                         html += `<td><select class="form-select form-select-sm task-edit-input" data-col="origin" data-row="${idx}">`;
                         origins.forEach(origin => {
                             const selected = (origin.value === task.origin) ? 'selected' : '';
@@ -1579,6 +2391,8 @@
                 } else {
                     if (col.key === 'tags') {
                         html += `<td>${(task.tags || []).map(escapeHTML).join(', ')}</td>`;
+                    } else if (col.key === 'date') {
+                        html += `<td>${escapeHTML(formatDateYMD(task[col.key]) || '')}</td>`;
                     } else {
                         html += `<td>${escapeHTML(task[col.key] || '')}</td>`;
                     }
@@ -1614,13 +2428,7 @@
                     if (pendingArr) {
                         // Find the task in pendingArr that matches the filtered[rowIdx]
                         const filteredTask = filtered[rowIdx];
-                        const task = pendingArr.find(t =>
-                            t.origin === filteredTask.origin &&
-                            t.activity === filteredTask.activity &&
-                            t.remarks === filteredTask.remarks &&
-                            t.date === filteredTask.date &&
-                            JSON.stringify(t.tags) === JSON.stringify(filteredTask.tags)
-                        );
+                        const task = pendingArr.find(t => t.id === filteredTask.id);
                         if (task) {
                             task[col] = value;
                         }
@@ -1866,13 +2674,7 @@
                         arr = (tasks[currentUser] && tasks[currentUser].today) || [];
                     }
                     const toDelete = filtered[idx];
-                    const delIdx = arr.findIndex(t =>
-                        t.origin === toDelete.origin &&
-                        t.activity === toDelete.activity &&
-                        t.remarks === toDelete.remarks &&
-                        t.date === toDelete.date &&
-                        JSON.stringify(t.tags) === JSON.stringify(toDelete.tags)
-                    );
+                    const delIdx = arr.findIndex(t => t.id === toDelete.id);
                     if (delIdx > -1) arr.splice(delIdx, 1);
                     if (!todayEditMode) {
                         const tasks = await getTasks();
@@ -1890,20 +2692,31 @@
         const tasks = await getTasks();
         const dateStr = document.getElementById('archive-date-display').textContent;
         let arr;
-        if (archiveEditMode && window.archiveEditPending) {
+        // If searching, show all user's tasks (today + all archive dates)
+        if (searchState.archive && searchState.archive.query) {
+            arr = [];
+            if (tasks[currentUser]) {
+                // All archive tasks
+                Object.values(tasks[currentUser].archive || {}).forEach(list => {
+                    if (Array.isArray(list)) arr = arr.concat(list);
+                });
+                // All today tasks
+                arr = arr.concat((tasks[currentUser].today || []));
+            }
+        } else if (archiveEditMode && window.archiveEditPending) {
             arr = window.archiveEditPending;
         } else {
             arr = [];
             if (tasks[currentUser] && tasks[currentUser].archive && tasks[currentUser].archive[dateStr]) {
                 arr = tasks[currentUser].archive[dateStr].filter(t => t && typeof t === "object");
             }
-        }
-        const todayObj = new Date();
-        const todayStr = todayObj.getFullYear() + "-" +
-            String(todayObj.getMonth() + 1).padStart(2, "0") + "-" +
-            String(todayObj.getDate()).padStart(2, "0");
-        if (dateStr === todayStr && tasks[currentUser] && tasks[currentUser].today) {
-            arr = arr.concat(tasks[currentUser].today.filter(t => t.date === todayStr));
+            const todayObj = new Date();
+            const todayStr = todayObj.getFullYear() + "-" +
+                String(todayObj.getMonth() + 1).padStart(2, "0") + "-" +
+                String(todayObj.getDate()).padStart(2, "0");
+            if (dateStr === todayStr && tasks[currentUser] && tasks[currentUser].today) {
+                arr = arr.concat(tasks[currentUser].today.filter(t => t.date === todayStr));
+            }
         }
         renderTasksTable(arr, document.getElementById('archive-tasks-list'), {
             editable: true,
@@ -1951,7 +2764,39 @@
     async function rerenderMassEditorTable() {
         let filtered;
         if (massEditorEditMode && window.massEditorEditPending) {
-            filtered = window.massEditorEditPending.map(t => ({ ...t }));
+            // Apply the same filter logic as in applyMassEditorFilter, but to the pending array
+            const filter = massEditorFilter;
+            filtered = window.massEditorEditPending.filter(t => {
+                if (!filter || !filter.type || filter.type === "all") return true;
+                if (filter.type === "month" && filter.value) {
+                    return t.date && t.date.startsWith(filter.value);
+                } else if (filter.type === "week" && filter.value) {
+                    const [year, week] = filter.value.split("-W");
+                    if (year && week) {
+                        const firstDay = new Date(year, 0, 1 + (week - 1) * 7);
+                        const day = firstDay.getDay();
+                        const monday = new Date(firstDay);
+                        if (day !== 1) {
+                            monday.setDate(firstDay.getDate() - ((day + 6) % 7));
+                        }
+                        const sunday = new Date(monday);
+                        sunday.setDate(monday.getDate() + 6);
+                        const startStr = monday.toISOString().slice(0, 10);
+                        const endStr = sunday.toISOString().slice(0, 10);
+                        return t.date >= startStr && t.date <= endStr;
+                    }
+                    return true;
+                } else if (filter.type === "range" && Array.isArray(filter.value) && filter.value.length) {
+                    return filter.value.includes(t.date);
+                } else if (filter.type === "daterange" && Array.isArray(filter.value) && filter.value.length === 2) {
+                    const [start, end] = filter.value;
+                    if (start && end) {
+                        return t.date >= start && t.date <= end;
+                    }
+                    return true;
+                }
+                return true;
+            }).map(t => ({ ...t }));
         } else {
             filtered = massEditorFilteredTasks.map(t => ({ ...t }));
         }
@@ -1995,25 +2840,39 @@
     async function rerenderViewTasksTable() {
         const users = await getUsers();
         const tasks = await getTasks();
-        const dateStr = document.getElementById('view-tasks-date').value;
+        const dateStr = document.getElementById('view-tasks-date-display').textContent;
         let allRows = [];
-        Object.keys(users).forEach(username => {
-            let userTasks = [];
-            if (tasks[username]) {
-                if (tasks[username].archive && tasks[username].archive[dateStr]) {
-                    userTasks = userTasks.concat(tasks[username].archive[dateStr]);
+        // If searching, show all tasks for all users (all dates)
+        if (searchState.view && searchState.view.query) {
+            Object.keys(users).forEach(username => {
+                if (tasks[username]) {
+                    // All archive tasks
+                    Object.values(tasks[username].archive || {}).forEach(list => {
+                        if (Array.isArray(list)) list.forEach(t => allRows.push({ ...t, user: username }));
+                    });
+                    // All today tasks
+                    (tasks[username].today || []).forEach(t => allRows.push({ ...t, user: username }));
                 }
-                // Include today's tasks if the selected date is today
-                const todayObj = new Date();
-                const todayStr = todayObj.getFullYear() + "-" +
-                    String(todayObj.getMonth() + 1).padStart(2, "0") + "-" +
-                    String(todayObj.getDate()).padStart(2, "0");
-                if (dateStr === todayStr && tasks[username].today) {
-                    userTasks = userTasks.concat(tasks[username].today.filter(t => t.date === todayStr));
+            });
+        } else {
+            Object.keys(users).forEach(username => {
+                let userTasks = [];
+                if (tasks[username]) {
+                    if (tasks[username].archive && tasks[username].archive[dateStr]) {
+                        userTasks = userTasks.concat(tasks[username].archive[dateStr]);
+                    }
+                    // Include today's tasks if the selected date is today
+                    const todayObj = new Date();
+                    const todayStr = todayObj.getFullYear() + "-" +
+                        String(todayObj.getMonth() + 1).padStart(2, "0") + "-" +
+                        String(todayObj.getDate()).padStart(2, "0");
+                    if (dateStr === todayStr && tasks[username].today) {
+                        userTasks = userTasks.concat(tasks[username].today.filter(t => t.date === todayStr));
+                    }
                 }
-            }
-            userTasks.forEach(t => allRows.push({ ...t, user: username }));
-        });
+                userTasks.forEach(t => allRows.push({ ...t, user: username }));
+            });
+        }
         renderTasksTable(allRows, document.getElementById('users-tasks-table-container'), {
             editable: false,
             columns: [
@@ -2057,7 +2916,8 @@
             const tasks = await getTasks();
             const dateStr = document.getElementById('archive-date-display').textContent;
             let arr = tasks[currentUser].archive[dateStr] || [];
-            Object.assign(arr[idx], {
+            const task = arr[idx];
+            Object.assign(arr.find(t => t.id === task.id), {
                 origin, activity, remarks, date, tags: tags.split(',').map(t => t.trim()).filter(Boolean)
             });
             await saveTasks(tasks);
@@ -2105,8 +2965,10 @@
             if (delIdx > -1) arr.splice(delIdx, 1);
         });
 
+        showGlobalSpinner("Deleting tasks...");
         massEditorSelectedTasks.clear();
         rerenderMassEditorTable();
+        finishWithToast("Tasks deleted!");
     });
 
     // --- Patch: Add tags to mass editor update ---
@@ -2139,4 +3001,336 @@
         rerenderMassEditorTable();
         rerenderViewTasksTable();
     };
+    // --- SEARCH STATE & HELPERS ---
+    const searchState = {
+        today: { query: '', loading: false },
+        archive: { query: '', loading: false },
+        view: { query: '', loading: false },
+        mass: { query: '', loading: false }
+    };
+
+    function highlightKeywords(text, keywords) {
+        if (!keywords || !keywords.length || !text) return escapeHTML(text);
+        let result = escapeHTML(text);
+        keywords.forEach(kw => {
+            if (!kw) return;
+            // Escape regex special chars
+            const safe = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            result = result.replace(new RegExp(safe, 'gi'), match => `<mark>${match}</mark>`);
+        });
+        return result;
+    }
+
+    function getSearchKeywords(query) {
+        return query.trim().split(/\s+/).filter(Boolean);
+    }
+
+    function filterTasksBySearch(tasks, query) {
+        if (!query) return tasks;
+        const keywords = getSearchKeywords(query);
+        return tasks.filter(t => {
+            const fields = [t.activity, t.remarks, ...(t.tags || [])].join(' ').toLowerCase();
+            return keywords.every(kw => fields.includes(kw.toLowerCase()));
+        });
+    }
+
+    function highlightTaskFields(task, columns, keywords) {
+        const highlighted = {};
+        columns.forEach(col => {
+            if (col.key === 'tags') {
+                highlighted.tags = (task.tags || []).map(tag => highlightKeywords(tag, keywords));
+            } else {
+                highlighted[col.key] = highlightKeywords(task[col.key] || '', keywords);
+            }
+        });
+        return highlighted;
+    }
+
+    // --- SEARCH EVENT HANDLERS ---
+    function setupSearchBox(tab) {
+        const input = document.getElementById(`${tab}-search-input`);
+        const clearBtn = document.getElementById(`${tab}-search-clear`);
+        const spinner = document.getElementById(`${tab}-search-spinner`);
+        if (!input || !clearBtn || !spinner) return;
+        // Show/hide clear button based on input
+        function updateClearBtn() {
+            if (input.value) {
+                clearBtn.style.display = '';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+        }
+        input.addEventListener('input', () => {
+            searchState[tab].query = input.value;
+            searchState[tab].loading = true;
+            spinner.style.display = '';
+            updateClearBtn();
+            setTimeout(() => {
+                searchState[tab].loading = false;
+                spinner.style.display = 'none';
+                rerenderTabWithSearch(tab);
+                if (input.value) showGlobalToast('Search complete!');
+            }, 200); // Simulate async search
+        });
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            searchState[tab].query = '';
+            rerenderTabWithSearch(tab);
+            showGlobalToast('Search cleared.');
+            updateClearBtn();
+            input.focus();
+        });
+        // Initial state
+        updateClearBtn();
+    }
+
+    function rerenderTabWithSearch(tab) {
+        if (tab === 'today') rerenderTodayTable();
+        else if (tab === 'archive') rerenderArchiveTable();
+        else if (tab === 'view') rerenderViewTasksTable();
+        else if (tab === 'mass') rerenderMassEditorTable();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setupSearchBox('today');
+        setupSearchBox('archive');
+        setupSearchBox('view');
+        setupSearchBox('mass');
+    });
+
+    // --- PATCH TABLE RENDERING TO SUPPORT SEARCH & HIGHLIGHT ---
+    const origRenderTasksTable = renderTasksTable;
+    renderTasksTable = async function (tasksArray, container, options) {
+        // Determine tab context
+        let tab = null;
+        if (container.id === 'today-tasks-list') tab = 'today';
+        else if (container.id === 'archive-tasks-list') tab = 'archive';
+        else if (container.id === 'users-tasks-table-container') tab = 'view';
+        else if (container.id === 'mass-editor-tasks-list') tab = 'mass';
+        // Apply search filter
+        let filtered = tasksArray;
+        let keywords = [];
+        if (tab && searchState[tab] && searchState[tab].query) {
+            filtered = filterTasksBySearch(filtered, searchState[tab].query);
+            keywords = getSearchKeywords(searchState[tab].query);
+        }
+        // Call original render, but patch cell rendering for highlight
+        let html = `<table class="table table-sm table-bordered align-middle mb-0"><thead><tr>`;
+        if (options.showUser) html += `<th>User</th>`;
+        let editMode = false;
+        if (container.id === 'today-tasks-list') editMode = window.todayEditMode;
+        else if (container.id === 'archive-tasks-list') editMode = window.archiveEditMode;
+        else if (container.id === 'mass-editor-tasks-list') editMode = window.massEditorEditMode;
+        if (options.editable && editMode) html += `<th style="width:70px;">Select</th>`;
+        options.columns.forEach(col => {
+            let sortArrow = '▲';
+            if (options.sortKey === col.key) sortArrow = options.sortAsc ? '▲' : '▼';
+            html += `<th style="position:relative;">
+            <span class="sort-btn" data-sort="${col.key}" style="cursor:pointer; user-select:none;">
+                ${col.label}
+                <span class="sort-arrow" style="margin-left:4px;">${sortArrow}</span>
+            </span>
+            <span class="filter-icon ms-1" data-col="${col.key}" style="cursor:pointer; margin-left:6px;">&#x25BC;</span>
+            <div class="dropdown-menu p-2" data-dropdown="${col.key}"></div>
+        </th>`;
+        });
+        html += `</tr></thead><tbody>`;
+        const users = options.showUser ? await getUsers() : {};
+        let origins = [];
+        if (options.editable && editMode && options.columns.some(col => col.key === 'origin')) {
+            origins = (await getOrigins()).filter(o => !o.archived);
+        }
+        for (let idx = 0; idx < filtered.length; idx++) {
+            const task = filtered[idx];
+            const highlighted = highlightTaskFields(task, options.columns, keywords);
+            html += `<tr data-row="${idx}">`;
+            if (options.showUser) {
+                let userCell = task.user || '';
+                if (users[task.user]) {
+                    userCell = `${escapeHTML(users[task.user].surname)}, ${escapeHTML(users[task.user].firstname)} ${escapeHTML(users[task.user].middlename)}`;
+                }
+                html += `<td>${userCell}</td>`;
+            }
+            if (options.editable && editMode) {
+                html += `<td>
+                <input type="checkbox" class="row-select-checkbox" data-row="${idx}" style="margin-right:8px;">
+                <button class="btn btn-sm btn-outline-danger delete-btn" data-row="${idx}">Delete</button>
+            </td>`;
+            }
+            for (const col of options.columns) {
+                if (options.editable && editMode) {
+                    if (col.key === 'origin') {
+                        html += `<td><select class="form-select form-select-sm task-edit-input" data-col="origin" data-row="${idx}">`;
+                        origins.forEach(origin => {
+                            const selected = (origin.value === task.origin) ? 'selected' : '';
+                            html += `<option value="${escapeHTML(origin.value)}" ${selected}>${escapeHTML(origin.value)}</option>`;
+                        });
+                        html += `</select></td>`;
+                    } else if (col.key === 'activity' || col.key === 'remarks' || col.key === 'date') {
+                        html += `<td><input type="text" class="form-control form-control-sm task-edit-input" data-col="${col.key}" data-row="${idx}" value="${escapeHTML(task[col.key] || '')}"></td>`;
+                    } else if (col.key === 'tags') {
+                        html += `<td><input type="text" class="form-control form-control-sm task-edit-input" data-col="tags" data-row="${idx}" value="${(task.tags || []).map(escapeHTML).join(', ')}"></td>`;
+                    } else {
+                        html += `<td>${escapeHTML(task[col.key] || '')}</td>`;
+                    }
+                } else {
+                    if (col.key === 'tags') {
+                        html += `<td>${(highlighted.tags || []).join(', ')}</td>`;
+                    } else if (col.key === 'date') {
+                        html += `<td>${escapeHTML(formatDateYMD(task[col.key]) || '')}</td>`;
+                    } else {
+                        html += `<td>${highlighted[col.key] || ''}</td>`;
+                    }
+                }
+            }
+            html += `</tr>`;
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        // (rest of original renderTasksTable logic follows...)
+        // Inline editing, sorting, filter dropdowns, etc. (reuse original logic)
+        // ...
+        // Copy from original function after table rendering
+        // Inline editing for editable fields in edit mode
+        if (options.editable && editMode) {
+            container.querySelectorAll('.task-edit-input').forEach(input => {
+                input.addEventListener('change', async function () {
+                    const rowIdx = parseInt(this.getAttribute('data-row'), 10);
+                    const col = this.getAttribute('data-col');
+                    let value = this.value;
+                    if (col === 'tags') {
+                        value = value.split(',').map(t => t.trim()).filter(Boolean);
+                    }
+                    let pendingArr = null;
+                    if (container.id === 'today-tasks-list' && todayEditMode && window.todayEditPending) {
+                        pendingArr = window.todayEditPending;
+                    } else if (container.id === 'archive-tasks-list' && archiveEditMode && window.archiveEditPending) {
+                        pendingArr = window.archiveEditPending;
+                    } else if (container.id === 'mass-editor-tasks-list' && massEditorEditMode && window.massEditorEditPending) {
+                        pendingArr = window.massEditorEditPending;
+                    }
+                    if (pendingArr) {
+                        const filteredTask = filtered[rowIdx];
+                        const task = pendingArr.find(t => t.id === filteredTask.id);
+                        if (task) {
+                            task[col] = value;
+                        }
+                    }
+                });
+            });
+        }
+        container.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.onclick = async function (e) {
+                e.preventDefault();
+                const key = this.getAttribute('data-sort');
+                if (container.id === 'today-tasks-list') {
+                    if (todaySortKey === key) todaySortAsc = !todaySortAsc;
+                    else { todaySortKey = key; todaySortAsc = true; }
+                    rerenderTodayTable();
+                } else if (container.id === 'archive-tasks-list') {
+                    if (archiveSortKey === key) archiveSortAsc = !archiveSortAsc;
+                    else { archiveSortKey = key; archiveSortAsc = true; }
+                    rerenderArchiveTable();
+                } else if (container.id === 'mass-editor-tasks-list') {
+                    if (massSortKey === key) massSortAsc = !massSortAsc;
+                    else { massSortKey = key; massSortAsc = true; }
+                    rerenderMassEditorTable();
+                } else if (container.id === 'users-tasks-table-container') {
+                    if (viewSortKey === key) viewSortAsc = !viewSortAsc;
+                    else { viewSortKey = key; viewSortAsc = true; }
+                    rerenderViewTasksTable();
+                }
+            };
+        });
+        if (options.editable) {
+            container.querySelectorAll('.delete-btn').forEach((btn, i) => {
+                btn.onclick = () => options.onDelete(filtered[i], i, filtered);
+            });
+        }
+        container.querySelectorAll('.row-select-checkbox').forEach(cb => {
+            cb.onchange = async function () {
+                const rowIdx = parseInt(this.getAttribute('data-row'), 10);
+                if (container.id === 'today-tasks-list') {
+                    if (this.checked) window.todaySelectedTasks.add(rowIdx);
+                    else window.todaySelectedTasks.delete(rowIdx);
+                } else if (container.id === 'archive-tasks-list') {
+                    if (this.checked) window.archiveSelectedTasks.add(rowIdx);
+                    else window.archiveSelectedTasks.delete(rowIdx);
+                } else if (container.id === 'mass-editor-tasks-list') {
+                    if (this.checked) window.massEditorSelectedTasks.add(rowIdx);
+                    else window.massEditorSelectedTasks.delete(rowIdx);
+                }
+            };
+        });
+        container.querySelectorAll('.filter-icon').forEach(icon => {
+            icon.onclick = async function (e) {
+                e.stopPropagation();
+                const colKey = this.getAttribute('data-col');
+                const dropdown = container.querySelector(`.dropdown-menu[data-dropdown="${colKey}"]`);
+                if (!dropdown) return;
+                const isShown = dropdown.classList.contains('show');
+                container.querySelectorAll('.dropdown-menu').forEach(d => {
+                    d.classList.remove('show');
+                    d.style.display = 'none';
+                });
+                if (isShown) {
+                    dropdown.classList.remove('show');
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                let values = [];
+                if (colKey === 'user' && options.showUser) {
+                    values = Array.from(new Set(tasksArray.map(t => t.user || ''))).sort();
+                } else if (colKey === 'tags') {
+                    values = Array.from(new Set(tasksArray.flatMap(t => t.tags || []))).sort();
+                } else {
+                    values = Array.from(new Set(tasksArray.map(t => t[colKey] || ''))).sort();
+                }
+                const tempSet = new Set(columnFilters[colKey] ? Array.from(columnFilters[colKey]) : []);
+                dropdown.innerHTML = ` 
+                ${values.map(val => {
+                    const checked = tempSet.has(val) ? 'checked' : '';
+                    const label = val === '' ? '<em>[blank]</em>' : escapeHTML(val);
+                    return `<label style="display:block;white-space:nowrap;"><input type="checkbox" value="${escapeHTML(val)}" ${checked}> ${label}</label>`;
+                }).join('')}
+                <div class="mt-2 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" id="apply-filter-${colKey}">Filter</button>
+                    <button type="button" class="btn btn-sm btn-secondary" id="clear-filter-${colKey}">Clear</button>
+                </div>
+            `;
+                dropdown.style.display = 'block';
+                dropdown.classList.add('show');
+                document.addEventListener('click', async function hideDropdown(ev) {
+                    if (!dropdown.contains(ev.target) && ev.target !== icon) {
+                        dropdown.classList.remove('show');
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', hideDropdown);
+                    }
+                });
+                dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.onchange = async function () {
+                        if (this.checked) tempSet.add(this.value);
+                        else tempSet.delete(this.value);
+                    };
+                });
+                dropdown.querySelector(`#apply-filter-${colKey}`).onclick = async function () {
+                    columnFilters[colKey] = new Set(tempSet);
+                    dropdown.classList.remove('show');
+                    dropdown.style.display = 'none';
+                    rerenderTabWithSearch(tab);
+                };
+                dropdown.querySelector(`#clear-filter-${colKey}`).onclick = async function () {
+                    tempSet.clear();
+                    columnFilters[colKey] = new Set();
+                    dropdown.classList.remove('show');
+                    dropdown.style.display = 'none';
+                    rerenderTabWithSearch(tab);
+                };
+            };
+        });
+        if (container.id === 'today-tasks-list') window.lastTodayFiltered = filtered;
+        if (container.id === 'archive-tasks-list') window.lastArchiveFiltered = filtered;
+        if (container.id === 'mass-editor-tasks-list') window.lastMassEditorFiltered = filtered;
+    };
+
 })();
