@@ -1,3 +1,67 @@
+// Sidebar Offcanvas Toggle (moved from test.html)
+document.addEventListener('DOMContentLoaded', function () {
+    var menuBtn = document.getElementById('menu-btn');
+    if (menuBtn) {
+        menuBtn.onclick = function () {
+            var sidebarMobile = document.getElementById('sidebar-mobile');
+            if (sidebarMobile) sidebarMobile.style.display = 'block';
+        };
+    }
+    var closeSidebarBtn = document.getElementById('close-sidebar');
+    if (closeSidebarBtn) {
+        closeSidebarBtn.onclick = function () {
+            var sidebarMobile = document.getElementById('sidebar-mobile');
+            if (sidebarMobile) sidebarMobile.style.display = 'none';
+        };
+    }
+});
+// === Inject today's date and user first name, and update after login ===
+function updateDateAndFirstname() {
+    // Set today's date in format: Tuesday, June 5
+    const dateSpan = document.getElementById('todays-date');
+    if (dateSpan) {
+        const today = new Date();
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const formatted = `${days[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()}`;
+        dateSpan.textContent = formatted;
+    }
+    // Set user's first name if available, using getUsers() and currentUser.username
+    const firstnameSpan = document.getElementById('user-firstname');
+    if (firstnameSpan) {
+        let firstname = '';
+        if (window.currentUser && window.currentUser.username) {
+            // Use the same logic as the View Tasks table: getUsers()[username].firstname
+            getUsers().then(users => {
+                const username = window.currentUser.username;
+                if (users[username] && users[username].firstname) {
+                    firstname = users[username].firstname;
+                } else {
+                    // Fallback to previous logic if not found
+                    firstname = window.currentUser.firstname || window.currentUser.firstName || window.currentUser.name || '';
+                    if (!firstname && window.currentUser.username) {
+                        firstname = window.currentUser.username.split(/[ ._@-]/)[0];
+                        firstname = firstname.charAt(0).toUpperCase() + firstname.slice(1);
+                    }
+                }
+                firstnameSpan.textContent = firstname;
+            });
+        } else {
+            firstnameSpan.textContent = '';
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', updateDateAndFirstname);
+
+// Patch afterLoginSetup to also update the name after login/session restore
+if (!window._patchedAfterLoginSetupForFirstname) {
+    const origAfterLoginSetup = window.afterLoginSetup;
+    window.afterLoginSetup = async function () {
+        if (origAfterLoginSetup) await origAfterLoginSetup();
+        updateDateAndFirstname();
+    };
+    window._patchedAfterLoginSetupForFirstname = true;
+}
 
 /**
  * =============================

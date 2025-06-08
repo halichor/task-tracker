@@ -17,198 +17,583 @@
 <body>
 
     <!-- ===== Login Screen ===== -->
-
-    <!-- #region ===== Main App ===== -->
-    <div class="container">
-
-        <!-- Sidebar : Desktop -->
-        <div id="sidebar-desktop">
-            <ul class="nav nav-tabs" id="main-tabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="today-tab" data-bs-toggle="tab" data-bs-target="#today"
-                        type="button" role="tab">Today</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archive"
-                        type="button" role="tab">Archive</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="view-users-tab" data-bs-toggle="tab" data-bs-target="#view-users"
-                        type="button" role="tab">View Tasks</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings"
-                        type="button" role="tab">Settings</button>
-                </li>
-            </ul>
+    <div id="auth" class="container" style="max-width: 400px;">
+        <h3>Please Log In</h3>
+        <div>
+            <input type="text" id="login-username" class="form-control" placeholder="Username"
+                autocomplete="username" />
         </div>
-
-        <!-- Sidebar : Off-canvas (Mobile) -->
-        <button class="d-md-none" id="menu-btn" type="button">MENU</button>
-        <div class="d-md-none" id="sidebar-mobile"
-            style="display:none; position:fixed; top:0; left:0; width:70vw; height:100vh; background:#fff; z-index:1050; box-shadow:2px 0 8px #0002;">
-            <div style="padding:1rem;">
-                <button id="close-sidebar" type="button">Close</button>
-                <div>Sidebar</div>
-                <a href="#">Link 1</a><br>
-                <a href="#">Link 2</a><br>
-                <a href="#">Link 3</a>
-            </div>
+        <div>
+            <input type="password" id="login-password" class="form-control" placeholder="Password"
+                autocomplete="current-password" />
         </div>
-
-        <!-- Main App Body -->
-        <div class="tab-content" id="main-tabs-content">
-            <div class="tab-pane fade show active" id="today" role="tabpanel" aria-labelledby="today-tab">1</div>
-            <div class="tab-pane fade" id="archive" role="tabpanel" aria-labelledby="archive-tab">2</div>
-            <div class="tab-pane fade" id="view-users" role="tabpanel" aria-labelledby="view-users-tab">3</div>
-            <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">4</div>
-        </div>
-        <!-- #endregion -->
-
-        <!-- #region ===== Modals ===== -->
-
-        <!-- Confirmation Modal -->
-        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="confirmModalLabel">Please Confirm</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body" id="confirmModalBody">
-                        <!-- Message goes here -->
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" id="confirmModalCancel"
-                            data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="confirmModalOk">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Alert Modal -->
-        <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="alertModalLabel">Alert</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body" id="alertModalBody"></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="alertModalOk"
-                            data-bs-dismiss="modal">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Confirm Modal -->
-        <div id="confirm-modal" class="modal" tabindex="-1" style="display:none;">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Please Confirm</h5>
-                    </div>
-                    <div class="modal-body">
-                        <p id="confirm-modal-message"></p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" id="confirm-modal-cancel-btn" class="btn btn-secondary">Cancel</button>
-                        <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Prompt Modal -->
-        <div id="prompt-modal" class="modal" tabindex="-1" style="display:none;">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Input Required</h5>
-                    </div>
-                    <div class="modal-body">
-                        <p id="prompt-modal-message"></p>
-                        <input type="text" id="prompt-modal-input" class="form-control" />
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" id="prompt-modal-cancel-btn" class="btn btn-secondary">Cancel</button>
-                        <button type="button" id="prompt-modal-ok-btn" class="btn btn-primary">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Global Spinner Indicator -->
-        <div id="global-spinner-indicator"
-            style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2000;display:none;">
-            <div class="d-flex align-items-center bg-light border rounded px-3 py-2 shadow">
-                <div class="spinner-border text-primary me-2" role="status" style="width:1.5rem;height:1.5rem;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <span id="global-spinner-text">Loading...</span>
-            </div>
-        </div>
-
-        <!-- Bootstrap Toast for notifications -->
-        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 2100">
-            <div id="global-toast" class="toast align-items-center text-bg-primary border-0" role="alert"
-                aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body" id="global-toast-body">
-                        Done!
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                        aria-label="Close"></button>
-                </div>
-            </div>
-        </div>
-        <!-- #endregion -->
-
-        <!-- #region ===== Scripts ===== -->
-
-        <!-- Prereq Script -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
-
-        <!-- Firebase App (the core Firebase SDK) -->
-        <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-        <!-- Firebase Firestore (the database) -->
-        <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-        <script>
-            // Your Firebase config
-            const firebaseConfig = {
-                apiKey: "AIzaSyCkaLhIvt_Plf8h4B1ImxDN-e3pg_tABD0",
-                authDomain: "task-tracker-c3fd6.firebaseapp.com",
-                projectId: "task-tracker-c3fd6",
-                storageBucket: "task-tracker-c3fd6.firebasestorage.app",
-                messagingSenderId: "946848839661",
-                appId: "1:946848839661:web:37486cc58c1e14a63059e4",
-                measurementId: "G-CDG3DWTF93"
-            };
-            firebase.initializeApp(firebaseConfig);
-            window.db = firebase.firestore();
-        </script>
-
-        <!-- Main Script -->
-        <!-- <script src="script.js"></script> -->
-
-        <!-- Sidebar Offcanvas Toggle -->
-        <script>
-            document.getElementById('menu-btn').onclick = function () {
-                document.getElementById('sidebar-mobile').style.display = 'block';
-            };
-            document.getElementById('close-sidebar').onclick = function () {
-                document.getElementById('sidebar-mobile').style.display = 'none';
-            };
-        </script>
-        <!-- #endregion -->
-
+        <button id="login-btn" class="btn btn-primary w-100">Login</button>
+        <div id="login-error" class="text-danger mt-3"></div>
     </div>
+
+    <!-- #region ===== Main App Body ===== -->
+    <div id="app" class="container">
+
+        <div id="main-body">
+
+            <!-- Sidebar : Desktop -->
+            <div id="sidebar-desktop">
+
+                <!-- Sidebar : Username -->
+                <span id="current-user-name"></span>
+
+                <!-- Sidebar : Colors and Brightness -->
+                <div>
+                    <div class="dropdown">
+                        <button id="palette-toggle-btn" class="btn btn-outline-secondary dropdown-toggle"
+                            title="Switch color palette" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="bi bi-palette"></span> <span id="palette-toggle-label">Palette</span>
+                        </button>
+                        <ul class="dropdown-menu" id="palette-dropdown-menu">
+                            <!-- Palette options will be injected by JS -->
+                        </ul>
+                    </div>
+                    <button id="dark-mode-toggle-btn" class="btn btn-outline-secondary" title="Toggle dark mode">
+                        <span id="dark-mode-toggle-icon" class="bi bi-moon"></span> <span
+                            id="dark-mode-toggle-label">Dark
+                            Mode</span>
+                    </button>
+                </div>
+
+                <!-- Sidebar : Nav Desktop -->
+                <ul class="nav nav-tabs flex-column" id="main-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="today-tab" data-bs-toggle="tab" data-bs-target="#today"
+                            type="button" role="tab">Today</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archive"
+                            type="button" role="tab">Archive</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="view-users-tab" data-bs-toggle="tab" data-bs-target="#view-users"
+                            type="button" role="tab">View Tasks</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings"
+                            type="button" role="tab">Settings</button>
+                    </li>
+                </ul>
+
+                <!-- Sidebar : Logout -->
+                <button id="logout-btn" class="btn btn-outline-secondary">Logout</button>
+
+            </div>
+
+            <!-- Main Body : Content -->
+            <div class="tab-content" id="main-tabs-content">
+
+                <!-- Header : Mobile -->
+                <div id="header-mobile" style="display: none">
+
+                    <!-- Sidebar : Menu Button -->
+                    <button class="d-md-none" id="menu-btn" type="button">MENU</button>
+
+                    <!-- Sidebar : Off-canvas (Mobile) -->
+                    <div class="d-md-none" id="sidebar-mobile">
+                    </div>
+
+                </div>
+
+                <!-- Tab : Today -->
+                <div class="tab-pane fade show active" id="today" role="tabpanel" aria-labelledby="today-tab">
+
+                    <span id="todays-date"></span>
+
+                    <span>Hello, <span id="user-firstname"></span>!</span>
+
+                    <!-- Today : Main Contents -->
+                    <div>
+                        <!-- Today : Add Task / Input -->
+                        <div>
+                            <select id="task-origin-input" class="form-select" style="max-width:160px;"></select>
+                            <input type="text" id="task-activity-input" class="form-control" placeholder="Activity" />
+                            <input type="text" id="task-remarks-input" class="form-control" placeholder="Remarks" />
+                            <input type="text" id="task-date-input" class="form-control" style="max-width:160px;" />
+                            <div class="position-relative" style="max-width: 300px;">
+                                <div id="task-tags-input-container"
+                                    class="form-control d-flex flex-wrap align-items-center"
+                                    style="min-height:38px;gap:4px;padding:2px 8px;cursor:text;max-width:300px;"></div>
+                                <div id="tags-suggestions" class="dropdown-menu"
+                                    style="max-width:300px;overflow-x:auto;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Today : Add Task / Button -->
+                        <button class="btn btn-primary" id="add-task-btn">Add Task</button>
+
+                        <!-- Today : Task Search -->
+                        <div>
+
+                            <!-- Today : Task Search / Input -->
+                            <div>
+                                <input type="text" id="today-search-input" class="form-control"
+                                    placeholder="Search tasks..." style="padding-right:60px;" />
+                                <button id="today-search-clear"
+                                    class="btn btn-outline-secondary btn-sm search-clear-inside" title="Clear search"
+                                    style="display:none; position:absolute; right:6px; top:50%; transform:translateY(-50%); z-index:2;">CLEAR</button>
+                            </div>
+
+                            <!-- Today : Task Search Bar / Spinner -->
+                            <div id="today-search-spinner" class="spinner-border spinner-border-sm text-primary"
+                                style="display:none;" role="status"><span class="visually-hidden">Searching...</span>
+                            </div>
+
+                        </div>
+
+                        <!-- Today : Task Table -->
+                        <div>
+                            <h5>Today's Tasks</h5>
+                            <div id="today-edit-controls" style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-outline-secondary" id="today-edit-btn">
+                                    <span id="today-edit-btn-label">EDIT</span>
+                                </button>
+                                <button class="btn btn-danger" id="today-delete-selected-btn" style="display:none;">
+                                    Delete Selected
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="today-tasks-list"></div>
+
+                        <!-- Today : Todo List -->
+                        <div id="user-todo-section">
+                            <h5>My TODO List</h5>
+                            <form id="todo-form" autocomplete="off" style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+                                <input id="todo-input" type="text" class="form-control" placeholder="Add a new task..."
+                                    autocomplete="off">
+                                <button type="submit" class="btn btn-primary">Add</button>
+                            </form>
+                            <ul id="todo-list"></ul>
+                            <div id="todo-done-section">
+                                <h6>Completed</h6>
+                                <ul id="todo-done-list" class="list-group"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Tab : Archive -->
+                <div class="tab-pane fade" id="archive" role="tabpanel" aria-labelledby="archive-tab">
+                    <div>
+                        <div id="datepicker" class="datepicker-inline"></div>
+
+                        <!-- Cols Fixed-->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5>Tasks on <span id="archive-date-display">[select a date]</span></h5>
+                            <div id="today-edit-controls" style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-outline-secondary btn-sm" id="archive-edit-btn">
+                                    <span id="archive-edit-btn-label">EDIT</span>
+                                </button>
+                                <button class="btn btn-danger btn-sm" id="archive-delete-selected-btn"
+                                    style="display:none;">
+                                    Delete Selected
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-2 d-flex align-items-center gap-2">
+                            <div class="position-relative" style="max-width:300px;">
+                                <input type="text" id="archive-search-input" class="form-control"
+                                    placeholder="Search archive..." style="padding-right:60px;" />
+                                <button id="archive-search-clear"
+                                    class="btn btn-outline-secondary btn-sm search-clear-inside" title="Clear search"
+                                    style="display:none; position:absolute; right:6px; top:50%; transform:translateY(-50%); z-index:2;">CLEAR</button>
+                            </div>
+                            <div id="archive-search-spinner" class="spinner-border spinner-border-sm text-primary ms-2"
+                                style="display:none;" role="status"><span class="visually-hidden">Searching...</span>
+                            </div>
+                        </div>
+
+                        <div id="archive-tasks-list"></div>
+                    </div>
+                </div>
+
+                <!-- Tab : View Tasks -->
+                <div class="tab-pane fade" id="view-users" role="tabpanel" aria-labelledby="view-users-tab">
+                    <div>
+                        <div id="view-tasks-datepicker" class="datepicker-inline"></div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5>Tasks for <span id="view-tasks-date-display">[select a date]</span></h5>
+                        </div>
+                        <div class="mb-2 d-flex align-items-center gap-2">
+                            <div class="position-relative" style="max-width:300px;">
+                                <input type="text" id="view-search-input" class="form-control"
+                                    placeholder="Search all users' tasks..." style="padding-right:60px;" />
+                                <button id="view-search-clear"
+                                    class="btn btn-outline-secondary btn-sm search-clear-inside" title="Clear search"
+                                    style="display:none; position:absolute; right:6px; top:50%; transform:translateY(-50%); z-index:2;">CLEAR</button>
+                            </div>
+                            <div id="view-search-spinner" class="spinner-border spinner-border-sm text-primary ms-2"
+                                style="display:none;" role="status"><span class="visually-hidden">Searching...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="users-tasks-table-container"></div>
+                </div>
+
+                <!-- Tab : Settings -->
+                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                    <div class="row">
+                        <!-- Sidebar as Bootstrap nav-pills flex-column -->
+                        <div class="col-md-4">
+                            <ul class="nav nav-pills flex-column mb-3" id="settings-sidebar" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="sidebar-account-btn" data-bs-toggle="pill"
+                                        data-bs-target="#account-section" type="button" role="tab">Account
+                                        Settings</button>
+                                </li>
+                                <li class="nav-item" role="presentation" id="sidebar-user-mgmt-li"
+                                    style="display:none;">
+                                    <button class="nav-link" id="sidebar-user-mgmt-btn" data-bs-toggle="pill"
+                                        data-bs-target="#user-mgmt-section" type="button" role="tab">User
+                                        Management</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="sidebar-task-mgmt-btn" data-bs-toggle="pill"
+                                        data-bs-target="#task-mgmt-section" type="button" role="tab">Task
+                                        Management</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="sidebar-mass-editor-btn" data-bs-toggle="pill"
+                                        data-bs-target="#mass-editor-section" type="button" role="tab">Mass Task
+                                        Editor</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="sidebar-backup-btn" data-bs-toggle="pill"
+                                        data-bs-target="#backup-section" type="button" role="tab">Backup, Import and
+                                        Export</button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="tab-content">
+                                <!-- Account Settings Tab -->
+                                <div class="tab-pane fade show active" id="account-section" role="tabpanel">
+                                    <h5>Change Username and Password</h5>
+                                    <div>
+                                        <label for="new-username" class="form-label">New Username</label>
+                                        <input type="text" id="new-username" class="form-control" />
+                                    </div>
+                                    <div>
+                                        <label for="new-password" class="form-label">New Password</label>
+                                        <input type="password" id="new-password" class="form-control" />
+                                    </div>
+                                    <button class="btn btn-primary" id="save-settings-btn">Save Changes</button>
+                                </div>
+                                <!-- User Management Tab (admin only) -->
+                                <div class="tab-pane fade" id="user-mgmt-section" role="tabpanel">
+                                    <h5>User Management</h5>
+                                    <div id="admin-user-mgmt">
+                                        <div>
+                                            <label for="admin-new-username" class="form-label">New Username</label>
+                                            <input type="text" id="admin-new-username" class="form-control" />
+                                        </div>
+                                        <div>
+                                            <label for="admin-new-password" class="form-label">New Password</label>
+                                            <input type="password" id="admin-new-password" class="form-control" />
+                                        </div>
+                                        <div>
+                                            <label for="admin-new-surname" class="form-label">Surname</label>
+                                            <input type="text" id="admin-new-surname" class="form-control" />
+                                        </div>
+                                        <div>
+                                            <label for="admin-new-firstname" class="form-label">First Name</label>
+                                            <input type="text" id="admin-new-firstname" class="form-control" />
+                                        </div>
+                                        <div>
+                                            <label for="admin-new-middlename" class="form-label">Middle Name</label>
+                                            <input type="text" id="admin-new-middlename" class="form-control" />
+                                        </div>
+                                        <div>
+                                            <label for="admin-new-designation" class="form-label">Designation</label>
+                                            <input type="text" id="admin-new-designation" class="form-control" />
+                                        </div>
+                                        <button class="btn btn-success mb-3" id="admin-create-user-btn">Create
+                                            User</button>
+                                        <h6>Existing Users</h6>
+                                        <ul id="user-list" class="list-group"></ul>
+                                    </div>
+                                </div>
+                                <!-- Task Management Tab -->
+                                <div class="tab-pane fade" id="task-mgmt-section" role="tabpanel">
+                                    <!-- Holidays -->
+                                    <h5>Holidays</h5>
+                                    <div>
+                                        <label for="holiday-datepicker" class="form-label">Select Date:</label>
+                                        <div id="holiday-datepicker"></div>
+                                    </div>
+                                    <div>
+                                        <label for="holiday-name" class="form-label">Holiday Name</label>
+                                        <input type="text" id="holiday-name" class="form-control"
+                                            placeholder="e.g. New Year's Day" />
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="holiday-repeat" />
+                                        <label class="form-check-label" for="holiday-repeat">
+                                            Repeat every year
+                                        </label>
+                                    </div>
+                                    <button class="btn btn-primary mb-2" id="add-holiday-btn">Add Holiday</button>
+                                    <div id="holidays-list"></div>
+
+                                    <!-- Manage Origins Tab (admin only, shown via JS) -->
+                                    <div id="origins-admin-section" style="display:none; margin-top:2em;">
+                                        <h5>Manage Origins</h5>
+                                        <div class="mb-3 d-flex">
+                                            <input id="new-origin-input" class="form-control me-2"
+                                                placeholder="New origin..." />
+                                            <button id="add-origin-btn" class="btn btn-primary">Add</button>
+                                        </div>
+                                        <div id="origins-admin-list"></div>
+                                        <small class="text-muted">Origins cannot be deleted, only archived/unarchived.
+                                            Editing an origin will update all tasks using it.</small>
+                                    </div>
+                                </div>
+                                <!-- Mass Task Editor Tab -->
+                                <div class="tab-pane fade" id="mass-editor-section" role="tabpanel">
+                                    <h5>Mass Task Editor</h5>
+                                    <div id="mass-editor-user-select-container" style="display:none;">
+                                        <label for="mass-editor-user-select" class="form-label">Select User:</label>
+                                        <select id="mass-editor-user-select" class="form-select"
+                                            style="max-width:200px;"></select>
+                                    </div>
+                                    <div class="mb-3 d-flex flex-wrap gap-2 align-items-end">
+                                        <div>
+                                            <label class="form-label">Filter:</label>
+                                            <select id="mass-editor-filter-type" class="form-select">
+                                                <option value="all">All</option>
+                                                <option value="month">Month</option>
+                                                <option value="week">Week</option>
+                                                <option value="range">Custom Range</option>
+                                                <option value="daterange">Date Range</option>
+                                            </select>
+                                        </div>
+                                        <div id="mass-editor-filter-month" style="display:none;">
+                                            <input type="month" id="mass-editor-month" class="form-control" />
+                                        </div>
+                                        <div id="mass-editor-filter-week" style="display:none;">
+                                            <input type="week" id="mass-editor-week" class="form-control" />
+                                        </div>
+                                        <div id="mass-editor-filter-range" style="display:none;">
+                                            <input type="text" id="mass-editor-range" class="form-control"
+                                                placeholder="Select multiple dates" readonly
+                                                style="background:#fff; cursor:pointer; max-width:220px;" />
+                                        </div>
+                                        <div id="mass-editor-filter-daterange" style="display:none;">
+                                            <div class="input-group input-daterange">
+                                                <input type="text" id="mass-editor-range-start" class="form-control"
+                                                    placeholder="Start date" readonly>
+                                                <span class="input-group-text">to</span>
+                                                <input type="text" id="mass-editor-range-end" class="form-control"
+                                                    placeholder="End date" readonly>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary" id="mass-editor-apply-filter-btn">Apply
+                                            Filter</button>
+                                    </div>
+                                    <div class="mb-2 d-flex align-items-center gap-2">
+                                        <div class="position-relative" style="max-width:300px;">
+                                            <input type="text" id="mass-search-input" class="form-control"
+                                                placeholder="Search tasks..." style="padding-right:60px;" />
+                                            <button id="mass-search-clear"
+                                                class="btn btn-outline-secondary btn-sm search-clear-inside"
+                                                title="Clear search"
+                                                style="display:none; position:absolute; right:6px; top:50%; transform:translateY(-50%); z-index:2;">CLEAR</button>
+                                        </div>
+                                        <div id="mass-search-spinner"
+                                            class="spinner-border spinner-border-sm text-primary ms-2"
+                                            style="display:none;" role="status"><span
+                                                class="visually-hidden">Searching...</span></div>
+                                    </div>
+                                    <div class="d-flex gap-2 mb-2">
+                                        <button class="btn btn-outline-secondary btn-sm" id="mass-editor-edit-btn">
+                                            <span id="mass-editor-edit-btn-label">EDIT</span>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" id="mass-editor-delete-selected-btn"
+                                            style="display:none;">
+                                            Delete Selected
+                                        </button>
+                                    </div>
+                                    <div id="mass-editor-tasks-list"></div>
+                                </div>
+                                <!-- Backup, Import and Export Tab -->
+                                <div class="tab-pane fade" id="backup-section" role="tabpanel">
+                                    <h5>Backup, Import and Export</h5>
+                                    <div id="backup-user-section">
+                                        <button class="btn btn-outline-primary mb-2" id="export-my-tasks-btn">Export My
+                                            Tasks</button>
+                                        <input type="file" id="import-my-tasks-input" style="display:none;"
+                                            accept=".json" />
+                                        <button class="btn btn-outline-secondary mb-2" id="import-my-tasks-btn">Import
+                                            My
+                                            Tasks</button>
+                                        <div id="import-my-tasks-status" class="mt-2"></div>
+                                    </div>
+                                    <div id="backup-admin-section" style="display:none;">
+                                        <hr>
+                                        <h6>Admin: All Users</h6>
+                                        <button class="btn btn-outline-primary mb-2" id="export-all-users-btn">Export
+                                            All
+                                            Users & Tasks (ZIP)</button>
+                                        <input type="file" id="import-all-users-input" style="display:none;"
+                                            accept=".zip,.json" />
+                                        <button class="btn btn-outline-secondary mb-2" id="import-all-users-btn">Import
+                                            Users/Tasks</button>
+                                        <div id="import-all-users-status" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- #endregion -->
+    </div>
+
+    <!-- #region ===== Modals and Popups ===== -->
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalLabel">Please Confirm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirmModalBody">
+                    <!-- Message goes here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="confirmModalCancel"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmModalOk">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalLabel">Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="alertModalOk" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal" tabindex="-1" style="display:none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Please Confirm</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="confirm-modal-message"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="confirm-modal-cancel-btn" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div id="prompt-modal" class="modal" tabindex="-1" style="display:none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Input Required</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="prompt-modal-message"></p>
+                    <input type="text" id="prompt-modal-input" class="form-control" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="prompt-modal-cancel-btn" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="prompt-modal-ok-btn" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Spinner Indicator -->
+    <div id="global-spinner-indicator"
+        style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2000;display:none;">
+        <div class="d-flex align-items-center bg-light border rounded px-3 py-2 shadow">
+            <div class="spinner-border text-primary me-2" role="status" style="width:1.5rem;height:1.5rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span id="global-spinner-text">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Bootstrap Toast for notifications -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 2100">
+        <div id="global-toast" class="toast align-items-center text-bg-primary border-0" role="alert"
+            aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="global-toast-body">
+                    Done!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- #endregion -->
+
+    <!-- #region ===== Scripts ===== -->
+
+    <!-- Prereq Script -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore (the database) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCkaLhIvt_Plf8h4B1ImxDN-e3pg_tABD0",
+            authDomain: "task-tracker-c3fd6.firebaseapp.com",
+            projectId: "task-tracker-c3fd6",
+            storageBucket: "task-tracker-c3fd6.firebasestorage.app",
+            messagingSenderId: "946848839661",
+            appId: "1:946848839661:web:37486cc58c1e14a63059e4",
+            measurementId: "G-CDG3DWTF93"
+        };
+        firebase.initializeApp(firebaseConfig);
+        window.db = firebase.firestore();
+    </script>
+
+    <!-- Main Script -->
+    <script src="script.js"></script>
+
+    <!-- #endregion -->
 
 </body>
 
